@@ -12,33 +12,55 @@
  *   ABCONVERT_API_TOKEN     required, WRITE scope (starting an export is a write)
  *   ABCONVERT_API_BASE      optional, default https://api.abconvert.io/v1
  *   EXPORT_EXPERIMENT_ID    required, the test's numeric ID as a string
- *   EXPORT_GTE              optional, ISO 8601 start. Default 30 days ago.
- *   EXPORT_LTE              optional, ISO 8601 end. Default now.
+ *   EXPORT_GTE              optional, calendar day YYYY-MM-DD. Default 29 days ago.
+ *   EXPORT_LTE              optional, calendar day YYYY-MM-DD. Default today.
+ *   EXPORT_SAMPLE_BASIS     optional, "assignment" (default) or "exposure"
  *   EXPORT_OUT_DIR          optional, default ./out
  *   EXPORT_POLL_MS          optional, default 5000
  *   EXPORT_TIMEOUT_MS       optional, default 600000 (10 minutes)
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
 import path from "node:path";
 
-import { clientFromEnv, AbconvertApiError, sleep } from "../../lib/abconvert.mjs";
+import { clientFromEnv, AbconvertApiError, sleep, DEFAULT_API_BASE } from "../../lib/abconvert.mjs";
 
 const EXPERIMENT_ID = process.env.EXPORT_EXPERIMENT_ID;
 const OUT_DIR = process.env.EXPORT_OUT_DIR ?? "./out";
 const POLL_MS = Number(process.env.EXPORT_POLL_MS ?? "5000");
 const TIMEOUT_MS = Number(process.env.EXPORT_TIMEOUT_MS ?? "600000");
+const SAMPLE_BASIS = process.env.EXPORT_SAMPLE_BASIS ?? null;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-if (!EXPERIMENT_ID) {
-  throw new Error('Set EXPORT_EXPERIMENT_ID to the test ID, for example "3021".');
-}
+/**
+ * `date_range` bounds are calendar days in the store's timezone, not
+ * timestamps: `2026-08-01`, never `2026-08-01T00:00:00Z`. Both are inclusive,
+ * so a 30-day window ends 29 days after it starts.
+ */
+const asCalendarDay = (date) => date.toISOString().slice(0, 10);
 
-const dateRange = {
-  gte: process.env.EXPORT_GTE ?? new Date(Date.now() - 30 * DAY_MS).toISOString(),
-  lte: process.env.EXPORT_LTE ?? new Date().toISOString(),
-};
+/** Read the run's inputs, or fail with a message that says how to fix it. */
+function readConfig() {
+  if (!EXPERIMENT_ID) {
+    throw new Error('Set EXPORT_EXPERIMENT_ID to the test ID, for example "3021".');
+  }
+  if (SAMPLE_BASIS && !["assignment", "exposure"].includes(SAMPLE_BASIS)) {
+    throw new Error('EXPORT_SAMPLE_BASIS must be "assignment" or "exposure".');
+  }
+
+  const dateRange = {
+    gte: process.env.EXPORT_GTE ?? asCalendarDay(new Date(Date.now() - 29 * DAY_MS)),
+    lte: process.env.EXPORT_LTE ?? asCalendarDay(new Date()),
+  };
+
+  for (const [bound, value] of Object.entries(dateRange)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new Error(`EXPORT_${bound.toUpperCase()} must be a calendar day, for example 2026-08-01. Got "${value}".`);
+    }
+  }
+
+  return dateRange;
+}
 
 /**
  * RFC 4180 CSV parser: handles quoted fields, embedded commas, embedded
@@ -164,15 +186,26 @@ function analyze(rows) {
 }
 
 async function main() {
+  const dateRange = readConfig();
   const abconvert = clientFromEnv();
 
   console.log(`Starting an order export for test ${EXPERIMENT_ID}`);
-  console.log(`  Range: ${dateRange.gte} to ${dateRange.lte} (both bounds inclusive)`);
+  console.log(`  Range: ${dateRange.gte} to ${dateRange.lte} (calendar days, both inclusive)`);
+  if (SAMPLE_BASIS) console.log(`  Sample basis: ${SAMPLE_BASIS}`);
 
-  // An Idempotency-Key means a retried request returns the original job
-  // instead of starting a second one.
+  // The Idempotency-Key is derived from the request itself, so a retry of the
+  // same export carries the same key and returns the original job instead of
+  // starting a second one. A different range is a different request and gets
+  // its own key: reusing a key with a different body returns 409.
+  //
+  // Set EXPORT_IDEMPOTENCY_KEY to supply your own when a queue owns the retry.
+  const idempotencyKey =
+    process.env.EXPORT_IDEMPOTENCY_KEY ??
+    `cookbook-export-${EXPERIMENT_ID}-${dateRange.gte}-${dateRange.lte}-${SAMPLE_BASIS ?? "assignment"}`;
+
   let job = await abconvert.createExport(EXPERIMENT_ID, dateRange, {
-    idempotencyKey: `cookbook-export-${EXPERIMENT_ID}-${randomUUID()}`,
+    idempotencyKey,
+    sampleBasis: SAMPLE_BASIS,
   });
   console.log(`  Job ${job.id} accepted, status ${job.status}.`);
 
@@ -192,13 +225,14 @@ async function main() {
   if (!job.url) {
     throw new Error(`Export ${job.id} completed without a download URL.`);
   }
-  if (job.truncated) {
-    console.warn("  This export hit the row cap of 10,000 rows. Narrow the date range and export again for the rest.");
-  }
-
-  // The link is signed and expires. Download it now, not later.
+  // The link is signed and expires. Download it now, not later. The link can
+  // come back relative to the API host, so resolve it against the base URL.
+  const downloadUrl = new URL(
+    job.url,
+    process.env.ABCONVERT_API_BASE || DEFAULT_API_BASE,
+  );
   console.log(`  Downloading (link valid until ${job.expires_at ?? "unknown"})`);
-  const response = await fetch(job.url);
+  const response = await fetch(downloadUrl);
   if (!response.ok) {
     throw new Error(`Download returned ${response.status}: ${await response.text()}`);
   }

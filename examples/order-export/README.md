@@ -4,7 +4,7 @@ Start an async order export, poll the job until it finishes, download the CSV, a
 
 Use this when the results snapshot does not answer your question. The snapshot gives you visitors, orders, revenue, lift, and a verdict. The export gives you the individual orders, so you can slice them any way you like.
 
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The script matches the published contract and will be verified against a dev store before general availability.
+> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The scripts here are written against the published contract.
 
 ## What it does
 
@@ -30,29 +30,33 @@ node examples/order-export/export.mjs
 | `ABCONVERT_API_TOKEN` | yes | | Bearer token for one shop, write scope. |
 | `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
 | `EXPORT_EXPERIMENT_ID` | yes | | The test's numeric ID as a string, for example `"3021"`. |
-| `EXPORT_GTE` | no | 30 days ago | Start of the range, ISO 8601. Inclusive. |
-| `EXPORT_LTE` | no | now | End of the range, ISO 8601. Inclusive. |
+| `EXPORT_GTE` | no | 29 days ago | Start of the range, a calendar day (`2026-08-01`). Inclusive. |
+| `EXPORT_LTE` | no | today | End of the range, a calendar day. Inclusive. |
+| `EXPORT_SAMPLE_BASIS` | no | `assignment` | `assignment` counts every visitor put in a test group, `exposure` only those the test reached. |
+| `EXPORT_IDEMPOTENCY_KEY` | no | derived from the request | Supply your own when a queue owns the retry. |
 | `EXPORT_OUT_DIR` | no | `./out` | Where the CSV lands. |
 | `EXPORT_POLL_MS` | no | `5000` | Delay between polls. |
 | `EXPORT_TIMEOUT_MS` | no | `600000` | Give up after 10 minutes and tell you to poll again later. |
 
 ## Reading the walkthrough
 
-### The request takes a date range and nothing else
-
-The export body is one field:
+### The request takes a date range and a sample basis
 
 ```json
-{ "date_range": { "gte": "2026-07-01T00:00:00Z", "lte": "2026-07-31T23:59:59Z" } }
+{ "date_range": { "gte": "2026-07-01", "lte": "2026-07-31" }, "sample_basis": "assignment" }
 ```
 
-Both bounds are required and both are inclusive. The export is in beta and takes no other filters yet, matching the ABConvert admin's own order export.
+Both bounds are required and inclusive, and both are **calendar days in your store's timezone**, not timestamps. A `2026-07-01T00:00:00Z` in either bound is rejected.
+
+The window narrows to the days that can hold data: no earlier than the day the test started, no later than today. Asking for more than that is not an error and changes no number. A window that can hold nothing at all returns 422 `date_range_out_of_bounds`, and a test that has not started yet returns 422 `export_not_available`.
+
+`sample_basis` picks the denominator, the same one the analytics dashboard offers. It is the export's only other filter today.
 
 ### The idempotency key
 
-`POST /v1/experiments/{id}/exports` accepts an `Idempotency-Key` header. Replaying a request with the same key returns the original response instead of starting a second job. Reusing a key with a different body returns 409 `idempotency_key_in_use`.
+`POST /v1/experiments/{id}/exports` accepts an `Idempotency-Key` header. Replaying a request with the same key returns the original response instead of starting a second job. Reusing a key with a different body returns 409 `idempotency_key_in_use`, and a key outside 1 to 255 characters returns 400 `invalid_idempotency_key` rather than being ignored.
 
-The script generates one key per run. If you build a retry queue, store the key with the queued job so the retry carries the same one, or you will pay for the same export twice.
+The script derives the key from the request itself, so a rerun of the same export reattaches to the original job while a different range gets its own key. Set `EXPORT_IDEMPOTENCY_KEY` when a retry queue owns the key instead.
 
 ### Polling
 
@@ -62,9 +66,9 @@ The job moves through `pending`, `processing`, and then `completed` or `failed`.
 
 When `status` is `completed`, `url` holds a signed link that works until `expires_at`. Download it in the same run. A link stashed in a queue and fetched an hour later may be dead.
 
-### The row cap
+### There is no row cap
 
-`truncated: true` means the export hit the row cap, currently 10,000 rows. The file you get is real but partial. Narrow the date range and export again for the rest. The script warns rather than analyzing a partial file silently.
+The export is not capped, so a wide date range returns every attributed order. Size the range for the file you want to download and parse, not to dodge a limit.
 
 ### The column schema is in beta
 
@@ -89,12 +93,12 @@ The output is raw order figures per test group: order count, revenue, average or
 
 > "Pull the order export for test 3021 for July and tell me whether the lift is coming from one product or spread across the catalog."
 
-> "My export came back truncated. Split the range and pull the whole month."
+> "Start an exposure-basis export for test 3021 for last month and tell me when it is ready."
 
 ## Common mistakes
 
 - **Polling with a read-only token.** Starting the export needs write. Polling does not. A read token fails on the first call.
 - **Saving the download URL for later.** It is signed and expires.
-- **Analyzing a truncated file.** Check `truncated` before you draw a conclusion from the numbers.
+- **Sending timestamps in `date_range`.** Both bounds are calendar days: `2026-07-01`, not `2026-07-01T00:00:00Z`.
 - **Reusing an idempotency key with a different date range.** That returns 409 `idempotency_key_in_use`. One key per distinct request.
 - **Expecting statistics in the CSV.** Lift and significance come from the results endpoint.

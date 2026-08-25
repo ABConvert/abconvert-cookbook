@@ -41,17 +41,18 @@ A 403 `api_access_disabled` means API access is turned off for the shop. It can 
 - Percentage adjustments are signed: `-10` lowers prices by 10%.
 - `PATCH` is sparse: only the fields you send change. Keyed collections merge (`prices` on `product_variant_id`, `test_groups` on `index`, `country_prices` on `country`, redirect `destinations` on `rule_key`); delete one price entry with `"remove": true`.
 - Lists are cursor-paginated: `{object: "list", data, has_more, next_cursor}`; pass `next_cursor` as `?cursor=`. `limit` is 1 to 100, default 20.
-- Send an `Idempotency-Key` header on `POST /v1/experiments` and `POST .../exports` when retrying. Reusing a key with a different body returns 409 `idempotency_key_in_use`.
-- Rate limits per token: 60 reads and 10 writes per minute. Every response carries `X-RateLimit-*`; a 429 carries `Retry-After` in seconds. Honor it, and never busy-loop writes.
+- Send an `Idempotency-Key` header on `POST /v1/experiments` and `POST .../exports` when retrying. Reusing a key with a different body returns 409 `idempotency_key_in_use`. A key outside 1 to 255 characters returns 400 `invalid_idempotency_key` rather than being ignored.
+- `?include=results_summary` on the list and retrieve endpoints inlines a small fixed results summary. Any other value returns 400 `invalid_include`.
+- Rate limits per token: 60 reads and 10 writes per minute. Every response carries `X-RateLimit-*`; a 429 carries `Retry-After` in seconds. Honor it, and never busy-loop writes. `POST /v1/experiments/{id}/results` is a read a read token may call, but it draws on its own budget of 10 result queries per minute.
 - Timestamps are ISO 8601 in fields suffixed `_at`. The exceptions are comparison keys inside a range object: `date_range.gte`, `created_at[lte]`.
 
 ## Endpoints
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/v1/experiments` | List. Filters: `status`, `type`, `created_at[gte]`, `created_at[lte]`, `scheduled`. Archived tests appear only with `status=archived`. List rows omit `changes`. There is no `include` parameter and no results on the list. |
+| GET | `/v1/experiments` | List. Filters: `status`, `type`, `created_at[gte]`, `created_at[lte]`, `scheduled`. Archived tests appear only with `status=archived`. List rows omit `changes`. Add `include=results_summary` to inline each test's results summary. |
 | POST | `/v1/experiments` | Create. Always lands in `draft`. |
-| GET | `/v1/experiments/{id}` | Retrieve, with full `changes`. Rejects query parameters. |
+| GET | `/v1/experiments/{id}` | Retrieve, with full `changes`. Takes `include` and nothing else. |
 | PATCH | `/v1/experiments/{id}` | Sparse update. |
 | POST | `/v1/experiments/{id}/preview` | `draft` to `preview`; returns `test_group_preview_urls`, one per test group. Optional body `{"resource": "<storefront-handle>"}` picks the resource to preview on. |
 | POST | `/v1/experiments/{id}/start` | Launch from `draft` or `preview`. Runs launch guards. |
@@ -61,7 +62,9 @@ A 403 `api_access_disabled` means API access is turned off for the shop. It can 
 | POST | `/v1/experiments/{id}/archive` | Archive `draft`, `preview`, `ended`, or `failed`. **One way, no unarchive.** |
 | PUT and DELETE | `/v1/experiments/{id}/schedule` | Set or clear `{start_at, end_at}`. After launch only `end_at` is editable. |
 | GET | `/v1/experiments/{id}/results` | Latest results snapshot (beta). 202 until the first snapshot. Optional `breakdown=date`. |
-| POST | `/v1/experiments/{id}/exports` | Start an async order export for a `date_range`. Answers 202 with a job. |
+| POST | `/v1/experiments/{id}/results` | Custom result query (beta): group by one or two dimensions, narrow the window, scope to a product group. Answers 200 when a computed snapshot already covers it, 202 while one computes. |
+| GET | `/v1/experiments/{id}/results/{query_id}` | Poll a custom result query. Rows carry values with no comparison against Control. |
+| POST | `/v1/experiments/{id}/exports` | Start an async order export for a `date_range`, optionally a `sample_basis`. Answers 202 with a job. |
 | GET | `/v1/exports/{id}` | Poll the export job. |
 
 Statuses: `draft`, `preview`, `active`, `paused`, `ended`, `failed`, `archived`. Scheduling is not a status: a scheduled test is a `draft` or `preview` carrying a `schedule`.
@@ -120,27 +123,45 @@ Per-type traps, each of which returns a 422 with a named finding:
 
 `GET /v1/experiments/{id}/results`. A 202 means the pipeline has not computed a snapshot yet. Tell the user to check back; do not poll in a tight loop. Polling faster than the pipeline refreshes returns the same snapshot with an unchanged `computed_at`.
 
-The snapshot carries `verdict`, `winning_test_group_index`, `srm_status`, `analysis` (`credible_interval_level`, `confidence_level`), and one row per test group with `test_group_index`, `sample_size` (the visitor denominator), `session_count` (the denominator for `add_to_cart_rate` and `reached_checkout_rate`), the six metrics, `orders`, `revenue`, and `vs_control` (null on the control row) with `lift`, `bayesian` (`prob_beat_control`, `credible_interval`, `risk`, any of which may be null), and `frequentist` (`p_value`, `confidence_interval`).
+The snapshot carries `verdict`, `winning_test_group_index`, `srm_status`, `analysis` (`credible_interval_level`, `confidence_level`), and one row per test group with `test_group_index`, `sample_size` (the visitor denominator), `session_count` (the denominator for `add_to_cart_rate` and `reached_checkout_rate`), the six metrics, `orders`, `revenue`, and `vs_control` (null on the control row) with `lift`, `difference`, `bayesian` (`prob_beat_control`, `credible_interval`, `risk`, any of which may be null, and the whole object null where Bayesian analysis is unavailable), and `frequentist` (`p_value`, `confidence_interval`, `difference_interval`).
+
+Every metric field is nullable. Guard each one you read.
 
 `breakdown=date` adds `breakdown.rows`, one row per test group per day, each with the same fields plus `dimension_value`.
 
 **The snapshot has no test group names.** Rows are identified by `test_group_index` only. Fetch `GET /v1/experiments/{id}` for `test_groups[].name` and `control`. Merchants rename their test groups, so never label a row from its index.
 
+### `difference` and `lift`
+
+`difference` is the absolute change from Control in the metric's own unit, and it is always statable. `lift` is that same change as a fraction of the **magnitude** of Control's value (`0.062` is +6.2%), so it stays positive for a test group that improves on a negative Control.
+
+**`lift` is null in two cases; `difference` in neither.** Control's value is zero, or Control and this test group sit on strictly opposite sides of zero. The second case is real, not theoretical: `profit_per_visitor` goes negative when COGS and ad cost exceed revenue, so a test group crossing from loss to profit has no statable percentage. `frequentist.confidence_interval` and `bayesian.credible_interval` bound `lift`, so both are null wherever it is.
+
+**Read `difference` for direction and size. Quote `lift` only when it is non-null.** Where `lift` is null, quote `difference` with `frequentist.difference_interval`, which is in the metric's own unit and stays populated: "profit per visitor +$0.41 (95% CI -$0.06 to +$0.88)". Rank test groups on `difference` too: sorting on `lift` silently drops the test group that crossed zero, which is the one that moved most.
+
+### Money fields
+
+`revenue_per_visitor`, `average_order_value`, `profit_per_visitor`, and `revenue` are the `Money` object `{"amount": "3.87", "currency": "USD"}`, not bare numbers. So are `difference`, both `difference_interval` bounds, and `bayesian.risk` on those metrics, each in its own metric's unit. The rates stay bare numbers throughout, and which metrics are money is fixed by the contract, so you can rely on it per field.
+
+**`amount` is a decimal string carrying at least the currency's minor units, and more where the value needs them.** These are measurements, not prices: a sub-cent `risk` publishes as `"0.004"`. Parse it as a decimal and never assume two places. Rounding to cents turns a real finding into `0.00`.
+
 When summarizing results:
 
 1. **Check `srm_status` first.** `mismatch` means the traffic split is broken and the results are not trustworthy. Say so prominently and stop short of a recommendation.
 2. Report the `verdict` (`winner`, `loser`, `inconclusive`, `insufficient_data`) as the platform's call. Do not override it with your own reading of the p-value.
-3. Quote lifts with their uncertainty: "revenue per visitor +6.2% (95% CI -1.1% to +13.4%)", never a bare point estimate. `lift` is a ratio: `0.062` means +6.2%.
+3. Never quote a bare point estimate. Pair it with its interval: `confidence_interval` when quoting a lift, `difference_interval` when quoting a difference.
 4. On `insufficient_data` or a tiny `sample_size`, say the test needs more traffic. Do not extrapolate.
-5. `profit_per_visitor` is null until COGS settings are configured. Omit it rather than reporting 0.
+5. `profit_per_visitor` is null until COGS settings are configured. Omit it rather than reporting 0. Once configured it can legitimately be negative, and that is a real loss, not a bug.
 
 ## Order exports
 
-`POST /v1/experiments/{id}/exports` with `{"date_range": {"gte": ..., "lte": ...}}`. Both bounds are required and inclusive. The API answers 202 with a job; poll `GET /v1/exports/{id}` until `status` is `completed` or `failed`.
+`POST /v1/experiments/{id}/exports` with `{"date_range": {"gte": "2026-08-01", "lte": "2026-08-15"}}`. Both bounds are required and inclusive, and both are calendar days in the store's timezone, not timestamps. Optional `sample_basis` (`assignment` by default, or `exposure`) picks the denominator. The API answers 202 with a job; poll `GET /v1/exports/{id}` until `status` is `completed` or `failed`.
 
-On `completed`, `url` is a signed link valid until `expires_at`. Download it in the same run. `truncated: true` means the export hit the row cap, currently 10,000 rows; narrow the range and export again.
+The window narrows to the days that can hold data: no earlier than the day the test started, no later than today. A window that can hold nothing returns 422 `date_range_out_of_bounds`. A test that has not started returns 422 `export_not_available`.
 
-The column schema matches the admin's order export and is in beta. Read the header row rather than assuming column names.
+On `completed`, `url` is a signed link valid until `expires_at`. Download it in the same run. The export is not capped, so a wide range returns every attributed order.
+
+The column schema matches the admin's order export and is in beta. Read the header row rather than assuming column names. The export is cut the way the analytics dashboard cuts its numbers, outlier filter included, so the two reconcile.
 
 ## Error handling (surface, do not swallow)
 

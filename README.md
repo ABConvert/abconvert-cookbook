@@ -5,7 +5,7 @@ Runnable recipes for the [ABConvert](https://abconvert.io) public REST API. Each
 ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, URL redirect, checkout, and offer tests. The API lets you create those tests, move them through their lifecycle, read results, and export order-level data from your own code.
 
 <!-- markdownlint-disable-next-line MD028 -->
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships. The scripts here are written against the published contract and cannot be run against production today. They will be verified against a dev store before general availability.
+> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships. The scripts here are written against the published contract and cannot be run against production today.
 
 ## What is in here
 
@@ -13,11 +13,11 @@ ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, UR
 |---|---|
 | [`examples/slack-report/`](examples/slack-report/) | Finds tests that hit day 7 or day 14, reads their results with a per-day breakdown, summarizes them with Claude, and posts to a Slack webhook. |
 | [`examples/guardrail-monitor/`](examples/guardrail-monitor/) | Polls results for every active test and pauses one when a guardrail metric breaches your threshold. |
-| [`examples/portfolio-dashboard/`](examples/portfolio-dashboard/) | Reads every store you hold a token for and writes one HTML and Markdown dashboard. |
+| [`examples/portfolio-dashboard/`](examples/portfolio-dashboard/) | Reads every store you hold a token for with `?include=results_summary` and writes one HTML and Markdown dashboard. |
 | [`examples/order-export/`](examples/order-export/) | Starts an async order export, polls the job, downloads the CSV, and runs a local analysis. |
 | [`skills/abconvert-public-api/`](skills/abconvert-public-api/) | A Claude skill you can drop into your own `.claude/skills/` so an agent drives the API correctly. |
 | [`AGENTS.md`](AGENTS.md) | The agent path: verbatim prompts you can paste into Claude Code, Cursor, or your own agent. |
-| [`lib/abconvert.mjs`](lib/abconvert.mjs) | The shared client every example imports. Auth, pagination, the error envelope, rate-limit backoff. |
+| [`lib/abconvert.mjs`](lib/abconvert.mjs) | The shared client every example imports. Auth, pagination, the error envelope, rate-limit backoff, and the money and comparison formatting the results snapshot needs. |
 
 ## Get an API token
 
@@ -101,6 +101,27 @@ Every error uses one shape on every status code:
 
 `lib/abconvert.mjs` turns any error response into an `AbconvertApiError` whose `describe()` prints the status, type, code, message, and every finding.
 
+## Reading results
+
+`GET /v1/experiments/{id}/results` answers 202 while the pipeline has not computed a snapshot yet. That is not an error and it is not JSON: treat it as "no data yet" and come back later. `lib/abconvert.mjs` returns `null` for it. Results refresh at most every few hours, so polling faster returns the same snapshot with an unchanged `computed_at`.
+
+Two shapes in the snapshot catch people out, and every example here handles both:
+
+**Money is an object, and its decimals matter.** `revenue_per_visitor`, `average_order_value`, `profit_per_visitor`, and `revenue` come back as `{"amount": "3.87", "currency": "USD"}`, as do the comparison fields derived from them. `amount` is a decimal string carrying as many places as the measurement needs, so an expected loss of `"0.004"` is real. Parse it as a decimal, print it as sent, and never round to two places.
+
+**A comparison can have a difference and no percentage.** Each metric under `vs_control` carries both `difference` (always statable, in the metric's own unit) and `lift` (the same change as a fraction of Control). `lift` is null when Control's value is zero, and when Control and the test group sit on opposite sides of zero, which `profit_per_visitor` reaches whenever costs cross revenue. `confidence_interval` and `credible_interval` bound `lift`, so they are null there too.
+
+So read `difference` for direction and size, quote `lift` only when it is there, and fall back to `frequentist.difference_interval` for the bound:
+
+```js
+import { describeComparison } from "./lib/abconvert.mjs";
+
+// "+6.2% (-1.1% to +13.4%)", or "+0.41 USD vs Control (-0.06 USD to +0.88 USD; ...)"
+describeComparison(group.vs_control.profit_per_visitor, { metric: "profit_per_visitor" });
+```
+
+Every metric field is nullable. Guard each one you read.
+
 ## Terminology
 
 The API calls the object an `experiment`: endpoints, fields, and identifiers all use that word. These docs call it a **test**, which matches the ABConvert admin. Field names in code stay exactly as the contract defines them.
@@ -116,10 +137,16 @@ Node 20 or later. No dependencies, no build step, no framework. Every script use
 ```bash
 git clone https://github.com/ABConvert/abconvert-cookbook.git
 cd abconvert-cookbook
+cp .env.example .env        # then put your token in it
+set -a; source .env; set +a
 node examples/portfolio-dashboard/dashboard.mjs
 ```
 
 ## Reference
 
-- API reference and OpenAPI contract: the `api-reference` section of the ABConvert docs.
+- API reference and OpenAPI contract: <https://docs.abconvert.io/api-reference/overview>
 - The skill in [`skills/abconvert-public-api/`](skills/abconvert-public-api/) is the condensed version an agent reads.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

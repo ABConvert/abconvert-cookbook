@@ -3,8 +3,11 @@
  * Agency portfolio dashboard: every store, every test, one page.
  *
  * Flow, per store token:
- *   1. GET /experiments?status=active  and  GET /experiments?status=paused
- *   2. GET /experiments/{id}/results for each one
+ *   1. GET /experiments?status=active&include=results_summary
+ *      and GET /experiments?status=paused&include=results_summary
+ *      One read per page of 100 tests, summary inlined. No per-test call.
+ *   2. GET /experiments/{id}/results only for the tests the summary says are
+ *      decided, because uncertainty lives on that endpoint alone
  *   3. Aggregate into one HTML page and one Markdown file
  *
  * A token reaches exactly one shop, so multi-store work means one token per
@@ -16,6 +19,7 @@
  *   ABCONVERT_API_BASE     optional, default https://api.abconvert.io/v1
  *   DASHBOARD_OUT_DIR      optional, default ./out
  *   DASHBOARD_STATUSES     optional, default "active,paused"
+ *   DASHBOARD_DETAIL       optional, "decided" (default), "all", or "none"
  *   REQUEST_SPACING_MS     optional, default 1100 (pace against 60 reads/min)
  */
 
@@ -26,8 +30,8 @@ import {
   createClient,
   AbconvertApiError,
   EXPERIMENT_STATUSES,
-  formatLift,
-  formatInterval,
+  comparisonRank,
+  describeComparison,
   redactToken,
   sleep,
   testGroupNames,
@@ -35,10 +39,16 @@ import {
 
 const OUT_DIR = process.env.DASHBOARD_OUT_DIR ?? "./out";
 const SPACING_MS = Number(process.env.REQUEST_SPACING_MS ?? "1100");
+const DETAIL_MODES = ["decided", "all", "none"];
+const DETAIL = process.env.DASHBOARD_DETAIL ?? "decided";
 const STATUSES = (process.env.DASHBOARD_STATUSES ?? "active,paused")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
+
+if (!DETAIL_MODES.includes(DETAIL)) {
+  throw new Error(`DASHBOARD_DETAIL must be one of: ${DETAIL_MODES.join(", ")}`);
+}
 
 for (const status of STATUSES) {
   if (!EXPERIMENT_STATUSES.includes(status)) {
@@ -85,13 +95,19 @@ function daysRunning(startedAt) {
 /**
  * Flatten one test into a dashboard row.
  *
- * There is no `include=results_summary` on the list endpoint, so the summary
- * comes from a second call to /results per test. That is one read each, which
- * is why the run is paced.
+ * `experiment` is a list row read with `?include=results_summary`, so it
+ * already carries the test group names and `results_summary`. `results` is the
+ * full snapshot, present only for the tests this run fetched detail for.
+ *
+ * The summary deliberately carries no comparison against Control. Uncertainty
+ * lives on `GET /experiments/{id}/results` alone, so that a list page cannot be
+ * mistaken for a result you can act on. This dashboard honors that: the lift
+ * column fills in only where the snapshot was read.
  */
 function toRow({ store, experiment, results }) {
   const names = testGroupNames(experiment);
   const metric = experiment.primary_metric ?? "revenue_per_visitor";
+  const summary = experiment.results_summary ?? null;
 
   const row = {
     store,
@@ -101,61 +117,79 @@ function toRow({ store, experiment, results }) {
     status: experiment.status,
     metric,
     days: daysRunning(experiment.started_at),
-    verdict: results?.verdict ?? null,
-    srm: results?.srm_status ?? null,
-    computedAt: results?.computed_at ?? null,
+    verdict: summary?.verdict ?? results?.verdict ?? null,
+    srm: summary?.srm_status ?? results?.srm_status ?? null,
+    computedAt: summary?.computed_at ?? results?.computed_at ?? null,
+    hasSnapshot: Boolean(summary || results),
     visitors: 0,
-    orders: 0,
     best: null,
+    bestUnavailable: null,
   };
 
-  if (!results) return row;
-
-  for (const group of results.test_groups ?? []) {
+  for (const group of summary?.test_groups ?? results?.test_groups ?? []) {
     row.visitors += group.sample_size ?? 0;
-    row.orders += group.orders ?? 0;
+  }
+
+  if (!results) {
+    row.bestUnavailable = row.hasSnapshot ? "snapshot not read" : "no snapshot yet";
+    return row;
   }
 
   // Best non-control test group on the primary metric.
+  //
+  // Rank on `difference`, which every comparison carries. Ranking on `lift`
+  // drops the group whose lift is null, and that is the group that crossed
+  // zero — the one most worth looking at.
   const candidates = (results.test_groups ?? [])
-    .filter((group) => group.vs_control?.[metric]?.lift !== null && group.vs_control?.[metric]?.lift !== undefined)
-    .map((group) => {
-      const comparison = group.vs_control[metric];
-      return {
-        name: names.get(group.test_group_index) ?? `Test group ${group.test_group_index}`,
-        lift: comparison.lift,
-        interval:
-          formatInterval(comparison.frequentist?.confidence_interval) ??
-          formatInterval(comparison.bayesian?.credible_interval),
-        probability: comparison.bayesian?.prob_beat_control ?? null,
-      };
-    })
-    .sort((a, b) => b.lift - a.lift);
+    .filter((group) => group.vs_control?.[metric])
+    .map((group) => ({
+      name: names.get(group.test_group_index) ?? `Test group ${group.test_group_index}`,
+      summary: describeComparison(group.vs_control[metric], { metric }),
+      rank: comparisonRank(group.vs_control[metric]),
+      probability: group.vs_control[metric].bayesian?.prob_beat_control ?? null,
+    }))
+    .filter((candidate) => candidate.rank !== null)
+    .sort((a, b) => b.rank - a.rank);
 
   row.best = candidates[0] ?? null;
+  if (!row.best) row.bestUnavailable = "no comparison yet";
   return row;
 }
 
-/** Collect every row for one store token. */
+/** Fetch the full snapshot for this test? */
+function wantsDetail(experiment) {
+  if (DETAIL === "none") return false;
+  if (DETAIL === "all") return true;
+  const verdict = experiment.results_summary?.verdict;
+  return verdict === "winner" || verdict === "loser";
+}
+
+/**
+ * Collect every row for one store token.
+ *
+ * One list read per page covers a whole store, because `include=results_summary`
+ * inlines the summary. Only the tests that need uncertainty cost a second read,
+ * and those are paced.
+ */
 async function collectStore({ label, token }) {
   const client = createClient({ token });
   const rows = [];
   const errors = [];
 
   for (const status of STATUSES) {
-    const experiments = await client.listAllExperiments({ status });
-    for (const summary of experiments) {
-      await sleep(SPACING_MS);
-      try {
-        const [experiment, results] = [
-          await client.getExperiment(summary.id),
-          await client.getResults(summary.id),
-        ];
-        rows.push(toRow({ store: label, experiment, results }));
-      } catch (error) {
-        const detail = error instanceof AbconvertApiError ? error.describe() : error.message;
-        errors.push(`${label} / test ${summary.id}: ${detail}`);
+    const experiments = await client.listAllExperiments({ status, include: "results_summary" });
+    for (const experiment of experiments) {
+      let results = null;
+      if (wantsDetail(experiment)) {
+        await sleep(SPACING_MS);
+        try {
+          results = await client.getResults(experiment.id);
+        } catch (error) {
+          const detail = error instanceof AbconvertApiError ? error.describe() : error.message;
+          errors.push(`${label} / test ${experiment.id}: ${detail}`);
+        }
       }
+      rows.push(toRow({ store: label, experiment, results }));
     }
   }
 
@@ -168,15 +202,13 @@ function renderMarkdown({ rows, errors, generatedAt }) {
   lines.push("");
   lines.push(`Generated ${generatedAt}. ${rows.length} test(s) across ${new Set(rows.map((r) => r.store)).size} store(s).`);
   lines.push("");
-  lines.push("| Store | Test | Type | Status | Days | Visitors | Orders | Verdict | SRM | Best test group |");
-  lines.push("|---|---|---|---|---|---|---|---|---|---|");
+  lines.push("| Store | Test | Type | Status | Days | Visitors | Verdict | SRM | Best test group |");
+  lines.push("|---|---|---|---|---|---|---|---|---|");
 
   for (const row of rows) {
-    const best = row.best
-      ? `${row.best.name} ${formatLift(row.best.lift)}${row.best.interval ? ` (${row.best.interval})` : ""}`
-      : "n/a";
+    const best = row.best ? `${row.best.name} ${row.best.summary}` : (row.bestUnavailable ?? "n/a");
     lines.push(
-      `| ${row.store} | ${row.id} ${row.name} | ${row.type} | ${row.status} | ${row.days ?? "n/a"} | ${row.visitors} | ${row.orders} | ${row.verdict ?? "none yet"} | ${row.srm ?? "unknown"} | ${best} |`,
+      `| ${row.store} | ${row.id} ${row.name} | ${row.type} | ${row.status} | ${row.days ?? "n/a"} | ${row.visitors} | ${row.verdict ?? "none yet"} | ${row.srm ?? "unknown"} | ${best} |`,
     );
   }
 
@@ -203,15 +235,14 @@ function renderHtml({ rows, errors, generatedAt }) {
   const body = rows
     .map((row) => {
       const best = row.best
-        ? `${escapeHtml(row.best.name)} ${formatLift(row.best.lift)}${row.best.interval ? ` <span class="muted">(${escapeHtml(row.best.interval)})</span>` : ""}`
-        : '<span class="muted">n/a</span>';
+        ? `${escapeHtml(row.best.name)} <span class="muted">${escapeHtml(row.best.summary)}</span>`
+        : `<span class="muted">${escapeHtml(row.bestUnavailable ?? "n/a")}</span>`;
       return `<tr>
   <td>${escapeHtml(row.store)}</td>
   <td><strong>${escapeHtml(row.name)}</strong><br><span class="muted">${escapeHtml(row.id)} · ${escapeHtml(row.type)}</span></td>
   <td>${escapeHtml(row.status)}</td>
   <td>${row.days ?? '<span class="muted">n/a</span>'}</td>
   <td>${row.visitors.toLocaleString("en-US")}</td>
-  <td>${row.orders.toLocaleString("en-US")}</td>
   <td>${badge(row)}</td>
   <td>${best}</td>
 </tr>`;
@@ -249,7 +280,7 @@ function renderHtml({ rows, errors, generatedAt }) {
 <p class="muted">Generated ${escapeHtml(generatedAt)} · ${rows.length} test(s) across ${new Set(rows.map((r) => r.store)).size} store(s)</p>
 <div class="wrap">
 <table>
-<thead><tr><th>Store</th><th>Test</th><th>Status</th><th>Days</th><th>Visitors</th><th>Orders</th><th>Result</th><th>Best test group</th></tr></thead>
+<thead><tr><th>Store</th><th>Test</th><th>Status</th><th>Days</th><th>Visitors</th><th>Result</th><th>Best test group</th></tr></thead>
 <tbody>
 ${body}
 </tbody>
