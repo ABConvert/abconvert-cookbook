@@ -23,7 +23,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { clientFromEnv, AbconvertApiError, sleep } from "../../lib/abconvert.mjs";
+import { clientFromEnv, AbconvertApiError, sleep, DEFAULT_API_BASE } from "../../lib/abconvert.mjs";
 
 const EXPERIMENT_ID = process.env.EXPORT_EXPERIMENT_ID;
 const OUT_DIR = process.env.EXPORT_OUT_DIR ?? "./out";
@@ -225,9 +225,14 @@ async function main() {
   if (!job.url) {
     throw new Error(`Export ${job.id} completed without a download URL.`);
   }
-  // The link is signed and expires. Download it now, not later.
+  // The link is signed and expires. Download it now, not later. The link can
+  // come back relative to the API host, so resolve it against the base URL.
+  const downloadUrl = new URL(
+    job.url,
+    process.env.ABCONVERT_API_BASE || DEFAULT_API_BASE,
+  );
   console.log(`  Downloading (link valid until ${job.expires_at ?? "unknown"})`);
-  const response = await fetch(job.url);
+  const response = await fetch(downloadUrl);
   if (!response.ok) {
     throw new Error(`Download returned ${response.status}: ${await response.text()}`);
   }
