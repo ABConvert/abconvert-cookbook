@@ -1,0 +1,100 @@
+# Slack test report
+
+Post a day 7 and day 14 summary of every running test to a Slack channel, written by Claude.
+
+> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The script matches the published contract and will be verified against a dev store before general availability.
+
+## What it does
+
+1. Lists every active test with `GET /v1/experiments?status=active`.
+2. Keeps the ones whose `started_at` is exactly 7 or 14 whole days ago.
+3. Fetches each of those tests with `GET /v1/experiments/{id}`, for its test group names.
+4. Reads `GET /v1/experiments/{id}/results?breakdown=date` for the numbers and the per-day trend.
+5. Sends the figures to Claude for a short, decision-first summary.
+6. Posts the summary to a Slack incoming webhook.
+
+You run it. Point a daily cron entry, an n8n schedule trigger, or a GitHub Action at it. ABConvert does not call you when a test reaches day 7, and webhook triggers are not available yet.
+
+## Setup
+
+```bash
+export ABCONVERT_API_TOKEN="abcv_live_..."     # read scope is enough
+export ANTHROPIC_API_KEY="sk-ant-..."
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
+node examples/slack-report/report.mjs
+```
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `ABCONVERT_API_TOKEN` | yes | | Bearer token for one shop. Read scope is enough. |
+| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
+| `ANTHROPIC_API_KEY` | unless `SKIP_LLM=1` | | Claude API key. |
+| `SLACK_WEBHOOK_URL` | unless `DRY_RUN=1` | | Slack incoming webhook. |
+| `REPORT_DAY_MARKS` | no | `7,14` | Which day marks to report on. |
+| `ANTHROPIC_MODEL` | no | `claude-sonnet-5` | Model used for the summary. |
+| `DRY_RUN` | no | | `1` prints the message instead of posting it. |
+| `SKIP_LLM` | no | | `1` posts the raw figures with no summary. |
+
+Start with `DRY_RUN=1 SKIP_LLM=1` to see exactly what the API returned before you wire in either service.
+
+## Reading the walkthrough
+
+### Finding the tests that are due
+
+The list endpoint filters on `created_at`, not on `started_at`. A test drafted in March and launched in June has a `created_at` months before the day you care about, so the script filters on `started_at` in memory:
+
+```js
+const active = await abconvert.listAllExperiments({ status: "active" });
+const due = active.filter((e) => DAY_MARKS.includes(daysRunning(e.started_at)));
+```
+
+`listAllExperiments` walks the cursor for you. Lists come back as `{object: "list", data, has_more, next_cursor}`, and you pass `next_cursor` back as `?cursor=`.
+
+### Group names live on the test, not on the snapshot
+
+The results snapshot identifies each row by `test_group_index` and nothing else. Names, and which group is Control, live on the test. So the script fetches both:
+
+```js
+const [full, results] = await Promise.all([
+  abconvert.getExperiment(id),
+  abconvert.getResults(id, { breakdown: "date" }),
+]);
+```
+
+Merchants rename test groups, so never label a row `Variant A` because its index is 1. Read the name off `test_groups[index].name`.
+
+### A 202 means no snapshot yet
+
+`GET /v1/experiments/{id}/results` answers 202 with no body when the analytics pipeline has not computed a snapshot. The client returns `null` for that case, and the report says so rather than printing zeros. Polling faster than the pipeline refreshes returns the same snapshot with an unchanged `computed_at`.
+
+### `breakdown=date`
+
+`date` is the only breakdown in v1. It adds a `breakdown.rows` array alongside the overall totals, one row per test group per day, each carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days so the summary can say whether a lift is stable or still moving.
+
+### What the summary is told
+
+The system prompt pins down the parts that matter and are easy to get wrong:
+
+- Check `srm_status` first. `mismatch` means the traffic split is broken, so the numbers are not trustworthy.
+- Report `verdict` as the platform's call. Do not re-derive it from the p-value.
+- Quote every lift with its interval, never a bare point estimate.
+- On `insufficient_data`, say the test needs more traffic instead of extrapolating.
+
+`profit_per_visitor` reads `null` until COGS settings are configured. Omit it rather than reporting 0.
+
+## Ask Claude
+
+Instead of scheduling the script, hand an agent the skill in [`skills/abconvert-public-api/`](../../skills/abconvert-public-api/) and ask:
+
+> "Summarize the results of every test that hit day 7 or day 14 today, and post it to my Slack channel."
+
+> "Show me the day-by-day breakdown for test 3021 and tell me whether the lift is stable or still moving."
+
+> "Check test 3021 for a sample ratio mismatch and tell me whether the results are trustworthy."
+
+## Common mistakes
+
+- **Polling results on a tight loop.** The endpoint reads a stored snapshot and computes nothing. Reading it every minute burns your 60 reads per minute and returns the same `computed_at`.
+- **Labeling groups by index.** Index 1 is not always `Variant A`, and Control is not always index 0. Read `control` and `name` off the test.
+- **Treating a 202 as an error.** It means the pipeline has not run for this test yet. Retry after the next refresh.
+- **Reporting a lift without its interval.** A +6.2% lift whose interval spans zero is not a result.

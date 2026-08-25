@@ -1,0 +1,10 @@
+# Generated dashboards, exports, and downloaded CSVs.
+out/
+
+# Secrets. Tokens belong in your secret manager, never in the repo.
+.env
+.env.*
+!.env.example
+
+node_modules/
+.DS_Store
