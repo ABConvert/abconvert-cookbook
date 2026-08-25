@@ -27,9 +27,11 @@
 import {
   clientFromEnv,
   AbconvertApiError,
+  MONEY_METRICS,
   PRIMARY_METRICS,
+  describeComparison,
   formatLift,
-  formatInterval,
+  formatQuantity,
   reportWarnings,
   testGroupNames,
 } from "../../lib/abconvert.mjs";
@@ -66,7 +68,23 @@ function evaluateGroup({ group, controlSampleSize }) {
 
   const { lift } = comparison;
   if (lift === null || lift === undefined) {
-    return { breach: false, reason: "lift not computed yet" };
+    // A null `lift` is not a missing number. The contract publishes it for two
+    // real states: Control's value is zero, or Control and this test group sit
+    // on strictly opposite sides of zero — reachable on profit_per_visitor,
+    // which goes negative when costs exceed revenue.
+    //
+    // `MAX_DROP` is a percentage of Control, and neither state has one. So the
+    // guardrail cannot judge this group. Never treat that as "within the
+    // guardrail": a group that crossed from profit into loss is exactly what
+    // this monitor exists to catch, and it is the case with no percentage.
+    // Raise it for a human instead of pausing on a number that does not exist.
+    const rate = !MONEY_METRICS.includes(METRIC);
+    const difference = formatQuantity(comparison.difference, { rate, signed: true });
+    return {
+      breach: false,
+      review: true,
+      reason: `${METRIC} has no percentage against Control (Control is zero, or the two sit on opposite sides of zero). Absolute difference ${difference}. Review by hand.`,
+    };
   }
   if (lift >= -MAX_DROP) {
     return { breach: false, reason: `lift ${formatLift(lift)} is within the guardrail` };
@@ -91,20 +109,31 @@ function evaluateGroup({ group, controlSampleSize }) {
     };
   }
 
-  const interval =
-    formatInterval(comparison.frequentist?.confidence_interval) ??
-    formatInterval(comparison.bayesian?.credible_interval);
-
   return {
     breach: true,
-    reason: `${METRIC} is ${formatLift(lift)} against Control${interval ? ` (interval ${interval})` : ""}, p=${pValue.toFixed(3)}, ${sample} visitors`,
+    reason: `${METRIC} is ${describeComparison(comparison, { metric: METRIC })} against Control, p=${pValue.toFixed(3)}, ${sample} visitors`,
   };
+}
+
+/**
+ * Which row is Control.
+ *
+ * The test carries `control: true`, and the snapshot marks the same row by
+ * omission: its `vs_control` is null. Read the flag off the test, and fall back
+ * to the snapshot's own signal when a test somehow carries no flag, so a
+ * missing flag cannot silently make every row look like a variant.
+ */
+function controlIndexOf({ experiment, results }) {
+  const flagged = (experiment.test_groups ?? []).findIndex((group) => group.control === true);
+  if (flagged !== -1) return flagged;
+  const row = (results.test_groups ?? []).find((entry) => !entry.vs_control);
+  return row ? row.test_group_index : null;
 }
 
 /** Check one test. Returns a list of findings, one per non-control test group. */
 function evaluateTest({ experiment, results }) {
   const names = testGroupNames(experiment);
-  const controlIndex = (experiment.test_groups ?? []).findIndex((group) => group.control === true);
+  const controlIndex = controlIndexOf({ experiment, results });
   const control = (results.test_groups ?? []).find((row) => row.test_group_index === controlIndex);
   const controlSampleSize = control?.sample_size ?? 0;
 
@@ -133,6 +162,7 @@ async function main() {
   );
 
   let paused = 0;
+  let needsReview = 0;
   for (const summary of active) {
     const results = await abconvert.getResults(summary.id);
     if (!results) {
@@ -154,8 +184,10 @@ async function main() {
     const breaches = findings.filter((finding) => finding.breach);
 
     for (const finding of findings) {
-      const mark = finding.breach ? "BREACH" : "ok";
-      console.log(`  ${summary.id} ${summary.name} / ${finding.name}: ${mark} - ${finding.reason}`);
+      const mark = finding.breach ? "BREACH" : finding.review ? "REVIEW" : "ok";
+      const log = finding.review ? console.warn : console.log;
+      log(`  ${summary.id} ${summary.name} / ${finding.name}: ${mark} - ${finding.reason}`);
+      if (finding.review) needsReview += 1;
     }
 
     if (!breaches.length) continue;
@@ -173,7 +205,8 @@ async function main() {
     paused += 1;
   }
 
-  console.log(DRY_RUN ? "Done (dry run)." : `Done. Paused ${paused} test(s).`);
+  const review = needsReview ? ` ${needsReview} test group(s) need a human: no percentage against Control.` : "";
+  console.log((DRY_RUN ? "Done (dry run)." : `Done. Paused ${paused} test(s).`) + review);
 }
 
 main().catch((error) => {

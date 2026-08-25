@@ -27,8 +27,9 @@
 import {
   clientFromEnv,
   AbconvertApiError,
-  formatLift,
-  formatInterval,
+  MONEY_METRICS,
+  describeComparison,
+  formatQuantity,
   reportWarnings,
   testGroupNames,
 } from "../../lib/abconvert.mjs";
@@ -80,24 +81,30 @@ function renderTest({ experiment, results, dayMark }) {
 
   for (const group of results.test_groups ?? []) {
     const label = names.get(group.test_group_index) ?? `Test group ${group.test_group_index}`;
+    // Money metrics come back as `{amount, currency}`, so they need formatting
+    // rather than string interpolation. `amount` is printed as sent: these
+    // values carry more than two decimals when the measurement needs them.
     const parts = [
       `visitors ${group.sample_size ?? 0}`,
       `orders ${group.orders ?? 0}`,
-      `conversion ${group.conversion_rate === null || group.conversion_rate === undefined ? "n/a" : (group.conversion_rate * 100).toFixed(2) + "%"}`,
-      `RPV ${group.revenue_per_visitor ?? "n/a"}`,
-      `AOV ${group.average_order_value ?? "n/a"}`,
+      `conversion ${formatQuantity(group.conversion_rate, { rate: true })}`,
+      `RPV ${formatQuantity(group.revenue_per_visitor)}`,
+      `AOV ${formatQuantity(group.average_order_value)}`,
+      `revenue ${formatQuantity(group.revenue)}`,
     ];
     lines.push(`  ${label}: ${parts.join(", ")}`);
 
     const comparison = group.vs_control?.[metric];
     if (comparison) {
-      const ci =
-        formatInterval(comparison.frequentist?.confidence_interval) ??
-        formatInterval(comparison.bayesian?.credible_interval);
-      const bits = [`lift ${formatLift(comparison.lift)}`];
-      if (ci) bits.push(`interval ${ci}`);
+      // `describeComparison` quotes the lift with its interval where there is
+      // one, and falls back to `difference` with `difference_interval` where
+      // Control is zero or the two straddle zero and no percentage exists.
+      const bits = [describeComparison(comparison, { metric })];
       if (comparison.bayesian?.prob_beat_control !== null && comparison.bayesian?.prob_beat_control !== undefined) {
         bits.push(`P(beats Control) ${(comparison.bayesian.prob_beat_control * 100).toFixed(0)}%`);
+      }
+      if (comparison.bayesian?.risk !== null && comparison.bayesian?.risk !== undefined) {
+        bits.push(`risk ${formatQuantity(comparison.bayesian.risk, { rate: !MONEY_METRICS.includes(metric) })}`);
       }
       if (comparison.frequentist?.p_value !== null && comparison.frequentist?.p_value !== undefined) {
         bits.push(`p=${comparison.frequentist.p_value.toFixed(3)}`);
@@ -137,10 +144,12 @@ async function summarize(reportText) {
   const system = [
     "You summarize A/B test results for a Shopify merchant's Slack channel.",
     "Rules:",
-    "- Call the object a test, and its arms test groups. Never say experiment or variation.",
+    "- Call the object a test. The units inside it are test groups: Control, Variant A, Variant B. Never say experiment, variation, or arm.",
     "- Lead with the decision: ship it, kill it, or keep running.",
     "- If srm_status is mismatch, say the traffic split is broken and that the numbers are not trustworthy, and stop short of a recommendation.",
-    "- Quote every lift with its interval. Never give a bare point estimate.",
+    "- Quote every figure with its interval. Never give a bare point estimate.",
+    "- Some comparisons have no percentage, because Control was zero or the two sit on opposite sides of zero. Those are quoted as an absolute difference in the metric's own unit. Repeat them that way; do not invent a percentage for them.",
+    "- Money figures carry their own decimal places. Repeat them as written and do not round.",
     "- If the verdict is insufficient_data, say the test needs more traffic. Do not extrapolate.",
     "- Report the platform's verdict as the platform's call. Do not override it with your own reading of the p-value.",
     "- Plain text for Slack. No markdown headings, no tables, no emoji. Under 200 words per test.",
