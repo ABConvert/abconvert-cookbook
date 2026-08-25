@@ -2,7 +2,7 @@
 
 Poll results on a schedule and pause a test when a guardrail metric falls too far below Control.
 
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The script matches the published contract and will be verified against a dev store before general availability.
+> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The scripts here are written against the published contract.
 
 ## What it does
 
@@ -53,6 +53,20 @@ frequentist.p_value <= MAX_P_VALUE                 // unlikely to be noise
 
 Each gate logs why it did not fire, so a near-miss shows up in your logs before it becomes a pause you have to explain.
 
+### A null lift is a fourth outcome, not a pass
+
+`lift` is null in two cases the contract names: Control's value is zero, or Control and this test group sit on strictly opposite sides of zero. `profit_per_visitor` reaches the second one whenever COGS and ad cost cross revenue, so a test group that falls from profit into loss has a real, large `difference` and no percentage at all.
+
+`GUARDRAIL_MAX_DROP` is a percentage of Control, so there is nothing to compare it against there. Reading that as "within the guardrail" would blind the monitor to the exact case it exists for. The script logs the group as `REVIEW` with its absolute `difference` and leaves it running for a human:
+
+```js
+if (lift === null || lift === undefined) {
+  return { breach: false, review: true, reason: `... Absolute difference ${difference}. Review by hand.` };
+}
+```
+
+The run's last line counts how many test groups landed there, so a `REVIEW` cannot scroll past unnoticed.
+
 ### A sample ratio mismatch stops the check
 
 When `srm_status` is `mismatch`, the observed traffic split does not match the configured one. Every comparison against Control is then suspect, including the one that would trigger a pause. The script logs it and moves on:
@@ -68,7 +82,7 @@ Pausing on a mismatch would look like a guardrail working and be a coin flip.
 
 ### Which row is Control
 
-The results snapshot marks Control by omission: its `vs_control` is `null`. The `control: true` flag lives on the test, so the script reads the control index from `GET /v1/experiments/{id}` and matches it to the snapshot by `test_group_index`. Do not assume Control is index 0.
+The results snapshot marks Control by omission: its `vs_control` is `null`. The `control: true` flag lives on the test, so the script reads the control index from `GET /v1/experiments/{id}` and matches it to the snapshot by `test_group_index`, falling back to the snapshot's own null `vs_control` if a test carries no flag. Do not assume Control is index 0.
 
 ### Pausing is idempotent
 
@@ -95,3 +109,4 @@ Pausing also never checks entitlements. A shop whose subscription lapsed or whos
 - **Ending instead of pausing.** `end` cannot be undone. Automation gets the reversible action.
 - **Polling every minute.** The endpoint reads a stored snapshot. You get the same `computed_at` and burn your 60 reads per minute.
 - **Watching `profit_per_visitor` without COGS.** It reads `null` until COGS settings are configured, so the guardrail can never fire on it.
+- **Treating a null `lift` as healthy.** It means no percentage exists, not that nothing moved. Read `difference`.

@@ -2,7 +2,7 @@
 
 Post a day 7 and day 14 summary of every running test to a Slack channel, written by Claude.
 
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The script matches the published contract and will be verified against a dev store before general availability.
+> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The scripts here are written against the published contract.
 
 ## What it does
 
@@ -50,6 +50,8 @@ const due = active.filter((e) => DAY_MARKS.includes(daysRunning(e.started_at)));
 
 `listAllExperiments` walks the cursor for you. Lists come back as `{object: "list", data, has_more, next_cursor}`, and you pass `next_cursor` back as `?cursor=`.
 
+A day mark is one calendar day wide, so run this once a day. A run that is skipped entirely skips that day's marks with it: if the job did not run, no report goes out for the tests that hit day 7 that day.
+
 ### Group names live on the test, not on the snapshot
 
 The results snapshot identifies each row by `test_group_index` and nothing else. Names, and which group is Control, live on the test. So the script fetches both:
@@ -71,13 +73,22 @@ Merchants rename test groups, so never label a row `Variant A` because its index
 
 `date` is the only breakdown in v1. It adds a `breakdown.rows` array alongside the overall totals, one row per test group per day, each carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days so the summary can say whether a lift is stable or still moving.
 
+### Money, and the lift that is not there
+
+Two shapes in the snapshot need handling before the numbers reach Slack, and the script does both in `lib/abconvert.mjs`:
+
+- **Money metrics are objects.** `revenue_per_visitor`, `average_order_value`, `profit_per_visitor`, and `revenue` come back as `{"amount": "3.87", "currency": "USD"}`. Dropping one into a template string prints `[object Object]`. `amount` carries as many decimal places as the measurement needs, so a `risk` of `"0.004"` is real: print it as sent, never rounded to cents.
+- **`lift` is null when no percentage exists.** Control's value is zero, or Control and the test group sit on opposite sides of zero, which `profit_per_visitor` reaches whenever costs cross revenue. `confidence_interval` and `credible_interval` are null there too. `describeComparison` quotes the lift and its interval where there is one, and falls back to `difference` with `frequentist.difference_interval` where there is not, so a real result never prints as `n/a`.
+
 ### What the summary is told
 
 The system prompt pins down the parts that matter and are easy to get wrong:
 
 - Check `srm_status` first. `mismatch` means the traffic split is broken, so the numbers are not trustworthy.
 - Report `verdict` as the platform's call. Do not re-derive it from the p-value.
-- Quote every lift with its interval, never a bare point estimate.
+- Quote every figure with its interval, never a bare point estimate.
+- Repeat an absolute difference as an absolute difference. Do not invent a percentage for a comparison that has none.
+- Repeat money as written. Do not round it.
 - On `insufficient_data`, say the test needs more traffic instead of extrapolating.
 
 `profit_per_visitor` reads `null` until COGS settings are configured. Omit it rather than reporting 0.
@@ -98,3 +109,4 @@ Instead of scheduling the script, hand an agent the skill in [`skills/abconvert-
 - **Labeling groups by index.** Index 1 is not always `Variant A`, and Control is not always index 0. Read `control` and `name` off the test.
 - **Treating a 202 as an error.** It means the pipeline has not run for this test yet. Retry after the next refresh.
 - **Reporting a lift without its interval.** A +6.2% lift whose interval spans zero is not a result.
+- **Interpolating a money metric into a string.** You get `[object Object]`. Format `{amount, currency}`, and keep every decimal place it came with.
