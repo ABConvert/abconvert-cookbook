@@ -4,13 +4,11 @@ Read every store you hold a token for and write one HTML and Markdown dashboard 
 
 Built for agencies and multi-store merchants. One token reaches one shop, so the job is a loop over tokens.
 
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The scripts here are written against the published contract.
-
 ## What it does
 
 For each store token:
 
-1. Lists tests with `GET /v1/experiments?status=active&include=results_summary` and the same call for `status=paused`. One read per page of 100 tests, with each test's results summary inlined: verdict, SRM check, sample size, and the six metrics per test group.
+1. Lists tests with `GET /v1/experiments?status=active&include=results_summary` and the same call for `status=paused`. One read per page of 100 tests, with each test's results summary inlined: outcome, SRM check, sample size, and the six metrics per test group.
 2. Reads `GET /v1/experiments/{id}/results` only for the tests the summary says are decided, because the comparison against Control lives on that endpoint alone.
 
 Then it writes `out/portfolio.html` and `out/portfolio.md`, sorted longest running first, because those are the tests due a decision.
@@ -32,7 +30,7 @@ open out/portfolio.html
 | `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
 | `DASHBOARD_OUT_DIR` | no | `./out` | Where the two files land. |
 | `DASHBOARD_STATUSES` | no | `active,paused` | Which statuses to include. |
-| `DASHBOARD_DETAIL` | no | `decided` | Which tests get a full snapshot read: `decided` (verdict `winner` or `loser`), `all`, or `none`. |
+| `DASHBOARD_DETAIL` | no | `decided` | Which tests get a full snapshot read: `decided` (outcome `winner` or `loser`), `all`, or `none`. |
 | `REQUEST_SPACING_MS` | no | `1100` | Delay before each snapshot read, to stay inside 60 reads per minute. |
 
 The label is yours. It appears in the dashboard and in the logs. The script prints only the last 4 characters of a token, so a log you paste into a ticket does not leak one.
@@ -45,7 +43,7 @@ A token is scoped to a single shop. There is no cross-store endpoint and no orga
 
 ### The summary rides along with the list
 
-`?include=results_summary` inlines a small fixed summary on each list row: `computed_at`, `verdict`, `winning_test_group_index`, `srm_status`, and per test group the sample size and the six metrics. It is `null` for a test with no snapshot yet.
+`?include=results_summary` inlines a small fixed summary on each list row: `computed_at`, `outcome`, `winning_test_group_index`, `srm_status`, and per test group the sample size and the six metrics. It is `null` for a test with no snapshot yet.
 
 What it deliberately leaves out is the comparison against Control. Lift, difference, intervals, and p-values live on `GET /v1/experiments/{id}/results` alone, so that a list page cannot be mistaken for a result you can act on. This dashboard honors that split: the summary fills the table, and the **Best test group** column fills in only for the rows whose snapshot it read.
 
@@ -63,9 +61,9 @@ A revoked token, a shop with API access turned off, or a single test that 404s i
 
 ### Reading the output
 
-- **Days** counts whole days since `started_at`. A long-running test with a `verdict` is the first thing to act on.
+- **Days** counts whole days since `started_at`. A long-running test with a `outcome` is the first thing to act on.
 - **Visitors** sums `sample_size` across the test groups in the summary.
-- **Result** shows the platform's `verdict`, unless `srm_status` is `mismatch`, in which case it shows the mismatch instead. A broken traffic split makes the verdict untrustworthy, so the dashboard leads with it.
+- **Result** shows the platform's `outcome`, unless `srm_status` is `mismatch`, in which case it shows the mismatch instead. A broken traffic split makes the outcome untrustworthy, so the dashboard leads with it.
 - **Best test group** is the non-control test group whose `difference` on the test's `primary_metric` is largest, quoted with its interval. A lift whose interval spans zero is not a result yet, which is why the interval is on the same line. Rows whose snapshot this run did not read say so instead of showing a blank.
 
 ### Rank on the difference, not the lift

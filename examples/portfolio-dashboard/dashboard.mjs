@@ -117,7 +117,7 @@ function toRow({ store, experiment, results }) {
     status: experiment.status,
     metric,
     days: daysRunning(experiment.started_at),
-    verdict: summary?.verdict ?? results?.verdict ?? null,
+    outcome: summary?.outcome ?? results?.outcome ?? null,
     srm: summary?.srm_status ?? results?.srm_status ?? null,
     computedAt: summary?.computed_at ?? results?.computed_at ?? null,
     hasSnapshot: Boolean(summary || results),
@@ -160,8 +160,8 @@ function toRow({ store, experiment, results }) {
 function wantsDetail(experiment) {
   if (DETAIL === "none") return false;
   if (DETAIL === "all") return true;
-  const verdict = experiment.results_summary?.verdict;
-  return verdict === "winner" || verdict === "loser";
+  const outcome = experiment.results_summary?.outcome;
+  return outcome === "winner" || outcome === "loser";
 }
 
 /**
@@ -208,7 +208,7 @@ function renderMarkdown({ rows, errors, generatedAt }) {
   for (const row of rows) {
     const best = row.best ? `${row.best.name} ${row.best.summary}` : (row.bestUnavailable ?? "n/a");
     lines.push(
-      `| ${row.store} | ${row.id} ${row.name} | ${row.type} | ${row.status} | ${row.days ?? "n/a"} | ${row.visitors} | ${row.verdict ?? "none yet"} | ${row.srm ?? "unknown"} | ${best} |`,
+      `| ${row.store} | ${row.id} ${row.name} | ${row.type} | ${row.status} | ${row.days ?? "n/a"} | ${row.visitors} | ${row.outcome ?? "none yet"} | ${row.srm ?? "unknown"} | ${best} |`,
     );
   }
 
@@ -226,10 +226,10 @@ function renderMarkdown({ rows, errors, generatedAt }) {
 function renderHtml({ rows, errors, generatedAt }) {
   const badge = (row) => {
     if (row.srm === "mismatch") return '<span class="flag flag-bad">SRM mismatch</span>';
-    if (row.verdict === "winner") return '<span class="flag flag-good">winner</span>';
-    if (row.verdict === "loser") return '<span class="flag flag-bad">loser</span>';
-    if (row.verdict) return `<span class="flag">${escapeHtml(row.verdict)}</span>`;
-    return '<span class="flag">no verdict yet</span>';
+    if (row.outcome === "winner") return '<span class="flag flag-good">winner</span>';
+    if (row.outcome === "loser") return '<span class="flag flag-bad">loser</span>';
+    if (row.outcome) return `<span class="flag">${escapeHtml(row.outcome)}</span>`;
+    return '<span class="flag">no outcome yet</span>';
   };
 
   const body = rows

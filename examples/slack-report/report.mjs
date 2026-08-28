@@ -76,7 +76,7 @@ function renderTest({ experiment, results, dayMark }) {
   }
 
   lines.push(`Snapshot computed at: ${results.computed_at ?? "unknown"}`);
-  lines.push(`Verdict: ${results.verdict ?? "none yet"}`);
+  lines.push(`Outcome: ${results.outcome ?? "none yet"}`);
   lines.push(`SRM check: ${results.srm_status ?? "unknown"}`);
 
   for (const group of results.test_groups ?? []) {
@@ -150,8 +150,8 @@ async function summarize(reportText) {
     "- Quote every figure with its interval. Never give a bare point estimate.",
     "- Some comparisons have no percentage, because Control was zero or the two sit on opposite sides of zero. Those are quoted as an absolute difference in the metric's own unit. Repeat them that way; do not invent a percentage for them.",
     "- Money figures carry their own decimal places. Repeat them as written and do not round.",
-    "- If the verdict is insufficient_data, say the test needs more traffic. Do not extrapolate.",
-    "- Report the platform's verdict as the platform's call. Do not override it with your own reading of the p-value.",
+    "- If the outcome is insufficient_data, say the test needs more traffic. Do not extrapolate.",
+    "- Report the platform's outcome as the platform's call. Do not override it with your own reading of the p-value.",
     "- Plain text for Slack. No markdown headings, no tables, no emoji. Under 200 words per test.",
   ].join("\n");
 

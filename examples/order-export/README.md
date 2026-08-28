@@ -2,9 +2,7 @@
 
 Start an async order export, poll the job until it finishes, download the CSV, and run a local analysis on it.
 
-Use this when the results snapshot does not answer your question. The snapshot gives you visitors, orders, revenue, lift, and a verdict. The export gives you the individual orders, so you can slice them any way you like.
-
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The scripts here are written against the published contract.
+Use this when the results snapshot does not answer your question. The snapshot gives you visitors, orders, revenue, lift, and an outcome. The export gives you the individual orders, so you can slice them any way you like.
 
 ## What it does
 
@@ -15,19 +13,19 @@ Use this when the results snapshot does not answer your question. The snapshot g
 
 You run the polling loop. The API does not call you when the job finishes, and webhook triggers are not available yet.
 
-**This one needs a write token.** Starting an export is a write. Polling the job is a read.
+Read scope is enough: an export downloads data and changes nothing about the test. It does spend write budget on the rate limit, because it exports order-level data in bulk.
 
 ## Setup
 
 ```bash
-export ABCONVERT_API_TOKEN="abcv_live_..."     # write scope
+export ABCONVERT_API_TOKEN="abcv_live_..."     # read scope is enough
 export EXPORT_EXPERIMENT_ID="3021"
 node examples/order-export/export.mjs
 ```
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `ABCONVERT_API_TOKEN` | yes | | Bearer token for one shop, write scope. |
+| `ABCONVERT_API_TOKEN` | yes | | Bearer token for one shop. Read scope is enough. |
 | `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
 | `EXPORT_EXPERIMENT_ID` | yes | | The test's numeric ID as a string, for example `"3021"`. |
 | `EXPORT_GTE` | no | 29 days ago | Start of the range, a calendar day (`2026-08-01`). Inclusive. |
@@ -85,7 +83,7 @@ When it cannot find a column, it prints the header row it actually got and tells
 
 ### What the analysis is and is not
 
-The output is raw order figures per test group: order count, revenue, average order value. There is no lift, no interval, and no verdict in it, because the API computes those from visitor denominators the order export does not carry. Read `GET /v1/experiments/{id}/results` for the statistics, and use the export for the questions the snapshot cannot answer, such as how the change moved a specific product or a specific customer segment.
+The output is raw order figures per test group: order count, revenue, average order value. There is no lift, no interval, and no outcome in it, because the API computes those from visitor denominators the order export does not carry. Read `GET /v1/experiments/{id}/results` for the statistics, and use the export for the questions the snapshot cannot answer, such as how the change moved a specific product or a specific customer segment.
 
 ## Ask Claude
 
@@ -97,7 +95,6 @@ The output is raw order figures per test group: order count, revenue, average or
 
 ## Common mistakes
 
-- **Polling with a read-only token.** Starting the export needs write. Polling does not. A read token fails on the first call.
 - **Saving the download URL for later.** It is signed and expires.
 - **Sending timestamps in `date_range`.** Both bounds are calendar days: `2026-07-01`, not `2026-07-01T00:00:00Z`.
 - **Reusing an idempotency key with a different date range.** That returns 409 `idempotency_key_in_use`. One key per distinct request.

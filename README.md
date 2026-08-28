@@ -4,9 +4,6 @@ Runnable recipes for the [ABConvert](https://abconvert.io) public REST API. Each
 
 ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, URL redirect, checkout, and offer tests. The API lets you create those tests, move them through their lifecycle, read results, and export order-level data from your own code.
 
-<!-- markdownlint-disable-next-line MD028 -->
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships. The scripts here are written against the published contract and cannot be run against production today.
-
 ## What is in here
 
 | Example | What it does |
@@ -22,21 +19,19 @@ ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, UR
 ## Get an API token
 
 1. Open the ABConvert admin.
-2. Go to **Settings** and then **API tokens**.
+2. Go to **Settings > Integrations**.
 3. Create a token and copy it. The plaintext is shown once.
 
-A token belongs to one shop and reaches that shop only. If you manage several stores, hold one token per store and call the API once per store.
-
-New tokens use the `abcv_live_` prefix. Older `abc_` tokens keep working and act as write tokens.
+A token belongs to one shop and reaches that shop only. If you manage several stores, hold one token per store.
 
 Tokens carry scopes:
 
 | Scope | Grants |
 |---|---|
-| `read_experiments` | List and retrieve tests, read results, poll export jobs |
-| `write_experiments` | Everything read grants, plus create, update, lifecycle actions, schedule changes, and starting exports |
+| `read_experiments` | List and retrieve tests, read results, and create, poll, and download exports |
+| `write_experiments` | Everything read grants, plus create, update, lifecycle actions, and schedule changes |
 
-`GET` requests need read. Every other method needs write. New tokens default to read, so grant write only to the integrations that manage tests. Of the examples here, only the guardrail monitor needs a write token.
+`GET` requests need read. Every other method needs write, except `POST /v1/experiments/{id}/results` and `POST /v1/experiments/{id}/exports`, which read data and change nothing about the test. New tokens default to read, so grant write only to the integrations that manage tests. Of the examples here, only the guardrail monitor needs a write token.
 
 Treat a token like a password. Keep it in your secret manager, never in client-side code or a repository. Revoking a token in the admin takes effect immediately.
 

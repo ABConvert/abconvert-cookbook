@@ -9,26 +9,24 @@ Drive A/B tests on a Shopify store over REST: create a draft, preview it, launch
 
 The full contract is the ABConvert API reference and its `openapi.yaml`. This file is the operating summary. Runnable examples for reporting, guardrails, portfolio dashboards, and order exports live in the ABConvert cookbook repository.
 
-**The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships. Until then, treat every call here as contract-accurate but unverified against production.
-
 ## Inputs (collect before doing anything)
 
 1. **Base URL.** Production is `https://api.abconvert.io/v1`. Read it from `ABCONVERT_API_BASE` when the user has set one, for example a local backend.
-2. **API token.** From `ABCONVERT_API_TOKEN` or from the user. New tokens start with `abcv_live_`; older `abc_` tokens still work and act as write tokens. Never print a full token; show the last 4 characters only.
+2. **API token.** From `ABCONVERT_API_TOKEN` or from the user. Never print a full token; show the last 4 characters only.
 3. **Which shop.** A token is scoped to exactly one shop. Multi-store work needs one token per store.
 
 If any input is missing, stop and ask. Do not guess a base URL, and do not try to mint a token.
 
-To get a token: ABConvert admin, then Settings, then API tokens, then create. The plaintext is shown once.
+To get a token: ABConvert admin, **Settings > Integrations**, then create. The plaintext is shown once.
 
 ## Scopes and account state
 
 | Scope | Grants |
 |---|---|
-| `read_experiments` | List and retrieve tests, read results, poll export jobs |
-| `write_experiments` | Everything read grants, plus create, update, lifecycle actions, schedule changes, starting exports |
+| `read_experiments` | List and retrieve tests, read results, and create, poll, and download exports |
+| `write_experiments` | Everything read grants, plus create, update, lifecycle actions, schedule changes |
 
-`GET` needs read. Everything else needs write. Write implies read. New tokens default to read, so a 403 `insufficient_scope` on a create usually means the user minted a read token.
+`GET` needs read. Everything else needs write, except `POST /v1/experiments/{id}/results` and `POST /v1/experiments/{id}/exports`, which read data and change nothing about the test (exports still spend write budget on the rate limit). Write implies read. New tokens default to read, so a 403 `insufficient_scope` on a create usually means the user minted a read token.
 
 A 403 `api_access_disabled` means API access is turned off for the shop. It can occur on any request, and it is an account state, not something to retry.
 
@@ -65,7 +63,8 @@ A 403 `api_access_disabled` means API access is turned off for the shop. It can 
 | POST | `/v1/experiments/{id}/results` | Custom result query (beta): group by one or two dimensions, narrow the window, scope to a product group. Answers 200 when a computed snapshot already covers it, 202 while one computes. |
 | GET | `/v1/experiments/{id}/results/{query_id}` | Poll a custom result query. Rows carry values with no comparison against Control. |
 | POST | `/v1/experiments/{id}/exports` | Start an async order export for a `date_range`, optionally a `sample_basis`. Answers 202 with a job. |
-| GET | `/v1/exports/{id}` | Poll the export job. |
+| GET | `/v1/exports/{id}` | Poll the export job. When `status` is `completed` and `expires_at` is in the future, `url` holds the signed download link; it goes null once the link expires. Branch on `url`, not `status`. |
+| GET | `/v1/exports/{id}/download` | Download the CSV. Takes no bearer token: the signed `url` from the job is the credential. Fetch it as given. |
 
 Statuses: `draft`, `preview`, `active`, `paused`, `ended`, `failed`, `archived`. Scheduling is not a status: a scheduled test is a `draft` or `preview` carrying a `schedule`.
 
@@ -101,7 +100,7 @@ Minimal price test, percentage adjustment form:
 
 Per-type traps, each of which returns a 422 with a named finding:
 
-- **price**: `prices[]` entries key on `product_variant_id`; sending `adjustment` re-derives every price not sent in the same request. Markets need the SCALE plan tier or above. At most 500 products, and 100 on most shops.
+- **price**: `prices[]` entries key on `product_variant_id`; sending `adjustment` re-derives every price not sent in the same request. Pricing across more than one market needs the Scale plan or higher. At most 500 products, and 100 on most shops.
 - **shipping**: Control must send `changes: []` (`control_offers_rates`); a rate without `shopify_rate_id` is a new rate and needs `name` and `price`.
 - **template**: Control must **also** carry a `template_key` change. `changes: []` returns `template_required`.
 - **theme**: Control may send `changes: []`; it resolves to the main theme.
@@ -123,7 +122,7 @@ Per-type traps, each of which returns a 422 with a named finding:
 
 `GET /v1/experiments/{id}/results`. A 202 means the pipeline has not computed a snapshot yet. Tell the user to check back; do not poll in a tight loop. Polling faster than the pipeline refreshes returns the same snapshot with an unchanged `computed_at`.
 
-The snapshot carries `verdict`, `winning_test_group_index`, `srm_status`, `analysis` (`credible_interval_level`, `confidence_level`), and one row per test group with `test_group_index`, `sample_size` (the visitor denominator), `session_count` (the denominator for `add_to_cart_rate` and `reached_checkout_rate`), the six metrics, `orders`, `revenue`, and `vs_control` (null on the control row) with `lift`, `difference`, `bayesian` (`prob_beat_control`, `credible_interval`, `risk`, any of which may be null, and the whole object null where Bayesian analysis is unavailable), and `frequentist` (`p_value`, `confidence_interval`, `difference_interval`).
+The snapshot carries `outcome`, `winning_test_group_index`, `srm_status`, `analysis` (`credible_interval_level`, `confidence_level`), and one row per test group with `test_group_index`, `sample_size` (the visitor denominator), `session_count` (the denominator for `add_to_cart_rate` and `reached_checkout_rate`), the six metrics, `orders`, `revenue`, and `vs_control` (null on the control row) with `lift`, `difference`, `bayesian` (`prob_beat_control`, `credible_interval`, `risk`, any of which may be null, and the whole object null where Bayesian analysis is unavailable), and `frequentist` (`p_value`, `confidence_interval`, `difference_interval`).
 
 Every metric field is nullable. Guard each one you read.
 
@@ -148,7 +147,7 @@ Every metric field is nullable. Guard each one you read.
 When summarizing results:
 
 1. **Check `srm_status` first.** `mismatch` means the traffic split is broken and the results are not trustworthy. Say so prominently and stop short of a recommendation.
-2. Report the `verdict` (`winner`, `loser`, `inconclusive`, `insufficient_data`) as the platform's call. Do not override it with your own reading of the p-value.
+2. Report the `outcome` (`winner`, `loser`, `inconclusive`, `insufficient_data`) as the platform's call. Do not override it with your own reading of the p-value.
 3. Never quote a bare point estimate. Pair it with its interval: `confidence_interval` when quoting a lift, `difference_interval` when quoting a difference.
 4. On `insufficient_data` or a tiny `sample_size`, say the test needs more traffic. Do not extrapolate.
 5. `profit_per_visitor` is null until COGS settings are configured. Omit it rather than reporting 0. Once configured it can legitimately be negative, and that is a real loss, not a bug.
@@ -170,7 +169,7 @@ Every error has one shape: `{"error": {"type", "code", "message", "param", "deta
 - **Relay `error.message` and `error.code` verbatim.** Messages are written to be actionable ("This token was revoked. Create a new one in Settings.").
 - **422 validation**: `findings[]` lists every violation with a JSON-path `param`. Report all of them at once, fix the payload, retry once. Do not fix one finding at a time.
 - **Success responses can carry a top-level `warnings` array** (non-blocking findings such as `split_changed` or `country_served_by_other_market`). Always show these. A 2xx with warnings is not a clean pass.
-- **403 family**: `insufficient_scope`, `api_access_disabled`, `feature_not_in_plan` (`param` names the feature: `price`, `offer`, or `multi_market`), `subscription_inactive`, `billing_cap_reached`, `carrier_service_required`. These are account states. Explain the fix; do not retry.
+- **403 family**: `insufficient_scope`, `api_access_disabled`, `feature_not_in_plan` (`param` names the feature: `price`, `offer`, `multi_market`, or `checkout_blocks`), `subscription_inactive`, `billing_cap_reached`, `carrier_service_required`. These are account states. Explain the fix; do not retry.
 - **401 family**: `missing_token`, `invalid_token`, `token_revoked`.
 - **Launch guards**: `start` can return 422 on cross-test conflicts. A running theme test blocks every other type (`theme_test_running`). A resource already claimed by a running test is blocked, with its own finding code: products in a price test, delivery zones in a shipping test. The message does not name the conflicting test, so cross-reference `GET /v1/experiments?status=active` and tell the user which test holds the claim.
 - **A storefront-script test can launch cleanly and still not render** when the ABConvert app embed is off. The API launch path does not block on it for price, theme, template, or URL redirect tests. Check the embed in the admin before launching one.
