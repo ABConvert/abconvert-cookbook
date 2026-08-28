@@ -2,8 +2,6 @@
 
 Post a day 7 and day 14 summary of every running test to a Slack channel, written by Claude.
 
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The scripts here are written against the published contract.
-
 ## What it does
 
 1. Lists every active test with `GET /v1/experiments?status=active`.
@@ -85,7 +83,7 @@ Two shapes in the snapshot need handling before the numbers reach Slack, and the
 The system prompt pins down the parts that matter and are easy to get wrong:
 
 - Check `srm_status` first. `mismatch` means the traffic split is broken, so the numbers are not trustworthy.
-- Report `verdict` as the platform's call. Do not re-derive it from the p-value.
+- Report `outcome` as the platform's call. Do not re-derive it from the p-value.
 - Quote every figure with its interval, never a bare point estimate.
 - Repeat an absolute difference as an absolute difference. Do not invent a percentage for a comparison that has none.
 - Repeat money as written. Do not round it.

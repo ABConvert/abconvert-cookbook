@@ -2,8 +2,6 @@
 
 Poll results on a schedule and pause a test when a guardrail metric falls too far below Control.
 
-> **The API is not live yet.** `api.abconvert.io` starts accepting requests when the API ships, so you cannot run this against production today. The scripts here are written against the published contract.
-
 ## What it does
 
 1. Lists every active test with `GET /v1/experiments?status=active`.

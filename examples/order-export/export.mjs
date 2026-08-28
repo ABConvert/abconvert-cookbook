@@ -270,7 +270,7 @@ async function main() {
     console.log(`  ${analysis.unparsedTotals} row(s) had a total this script could not parse and counted as 0.`);
   }
   console.log("");
-  console.log("These are raw order figures with no statistics attached. For lift, significance, and a verdict, read GET /v1/experiments/{id}/results.");
+  console.log("These are raw order figures with no statistics attached. For lift, significance, and an outcome, read GET /v1/experiments/{id}/results.");
 }
 
 main().catch((error) => {
