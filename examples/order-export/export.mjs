@@ -9,12 +9,15 @@
  *   4. Parse the CSV and summarize per test group
  *
  * Environment:
- *   ABCONVERT_API_TOKEN     required, WRITE scope (starting an export is a write)
+ *   ABCONVERT_API_TOKEN     required, read scope is enough (the create call
+ *                           spends write rate-limit budget, but needs no
+ *                           write scope)
  *   ABCONVERT_API_BASE      optional, default https://api.abconvert.io/v1
  *   EXPORT_EXPERIMENT_ID    required, the test's numeric ID as a string
  *   EXPORT_GTE              optional, calendar day YYYY-MM-DD. Default 29 days ago.
  *   EXPORT_LTE              optional, calendar day YYYY-MM-DD. Default today.
  *   EXPORT_SAMPLE_BASIS     optional, "assignment" (default) or "exposure"
+ *   EXPORT_IDEMPOTENCY_KEY  optional, default derived from the request
  *   EXPORT_OUT_DIR          optional, default ./out
  *   EXPORT_POLL_MS          optional, default 5000
  *   EXPORT_TIMEOUT_MS       optional, default 600000 (10 minutes)
@@ -23,7 +26,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { clientFromEnv, AbconvertApiError, sleep, DEFAULT_API_BASE } from "../../lib/abconvert.mjs";
+import { clientFromEnv, AbconvertApiError, sleep } from "../../lib/abconvert.mjs";
 
 const EXPERIMENT_ID = process.env.EXPORT_EXPERIMENT_ID;
 const OUT_DIR = process.env.EXPORT_OUT_DIR ?? "./out";
@@ -48,6 +51,10 @@ function readConfig() {
     throw new Error('EXPORT_SAMPLE_BASIS must be "assignment" or "exposure".');
   }
 
+  // The defaults come from toISOString(), so they are UTC calendar days,
+  // while the API reads the bounds in your store's timezone. A store in a
+  // timezone ahead of UTC should pass EXPORT_GTE/EXPORT_LTE explicitly to
+  // include its newest day.
   const dateRange = {
     gte: process.env.EXPORT_GTE ?? asCalendarDay(new Date(Date.now() - 29 * DAY_MS)),
     lte: process.env.EXPORT_LTE ?? asCalendarDay(new Date()),
@@ -114,8 +121,8 @@ function parseCsv(text) {
 }
 
 /**
- * The export column schema is in beta and the docs publish the list, so this
- * matches column names case insensitively against a few likely spellings
+ * The export column schema is in beta and the docs do not publish the list, so
+ * this matches column names case insensitively against a few likely spellings
  * instead of hard coding one. When a column is missing, the script prints the
  * header it actually got and says which field it could not find.
  */
@@ -225,14 +232,10 @@ async function main() {
   if (!job.url) {
     throw new Error(`Export ${job.id} completed without a download URL.`);
   }
-  // The link is signed and expires. Download it now, not later. The link can
-  // come back relative to the API host, so resolve it against the base URL.
-  const downloadUrl = new URL(
-    job.url,
-    process.env.ABCONVERT_API_BASE || DEFAULT_API_BASE,
-  );
+  // `url` is the complete download link, signed and expiring. Fetch it as
+  // given: its own parameters authorize the request.
   console.log(`  Downloading (link valid until ${job.expires_at ?? "unknown"})`);
-  const response = await fetch(downloadUrl);
+  const response = await fetch(job.url);
   if (!response.ok) {
     throw new Error(`Download returned ${response.status}: ${await response.text()}`);
   }

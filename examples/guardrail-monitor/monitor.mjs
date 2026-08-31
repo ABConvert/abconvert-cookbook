@@ -9,9 +9,9 @@
  *      lift against your threshold
  *   4. POST /experiments/{id}/pause when a breach clears every gate
  *
- * Run it from your own scheduler. Every 15 to 60 minutes is plenty: the
- * results endpoint reads a stored snapshot, so polling faster returns the same
- * numbers and spends your rate limit.
+ * Run it from your own scheduler. Every few hours is plenty: the snapshot
+ * recomputes about every 6 hours while a test runs, so polling faster returns
+ * the same numbers with an unchanged computed_at and spends your rate limit.
  *
  * Environment:
  *   ABCONVERT_API_TOKEN     required, WRITE scope (pausing is a write)
@@ -32,7 +32,6 @@ import {
   describeComparison,
   formatLift,
   formatQuantity,
-  reportWarnings,
   testGroupNames,
 } from "../../lib/abconvert.mjs";
 
@@ -118,8 +117,10 @@ function evaluateGroup({ group, controlSampleSize }) {
 /**
  * Which row is Control.
  *
- * The test carries `control: true`, and the snapshot marks the same row by
- * omission: its `vs_control` is null. Read the flag off the test, and fall back
+ * The test's `test_groups` carry `control: true`, and the list row carries
+ * them too (`name`, `control`, `split`), so the flag is already in hand. The
+ * snapshot marks the same row by omission: its `vs_control` is null. Read the
+ * flag off the test, and fall back
  * to the snapshot's own signal when a test somehow carries no flag, so a
  * missing flag cannot silently make every row look like a variant.
  */
@@ -179,8 +180,9 @@ async function main() {
       continue;
     }
 
-    const experiment = await abconvert.getExperiment(summary.id);
-    const findings = evaluateTest({ experiment, results });
+    // The list row already carries each test group's `name`, `control`, and
+    // `split`, so no per-test fetch is needed for identity.
+    const findings = evaluateTest({ experiment: summary, results });
     const breaches = findings.filter((finding) => finding.breach);
 
     for (const finding of findings) {
@@ -200,7 +202,6 @@ async function main() {
     // Pausing is idempotent: a test that is already paused answers 200 and
     // changes nothing, so a repeated run is safe.
     const updated = await abconvert.pauseExperiment(summary.id);
-    reportWarnings(`test ${summary.id}`, updated);
     console.log(`  ${summary.id}: paused. Status is now ${updated.status}.`);
     paused += 1;
   }

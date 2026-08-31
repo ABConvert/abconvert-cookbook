@@ -4,12 +4,11 @@ Post a day 7 and day 14 summary of every running test to a Slack channel, writte
 
 ## What it does
 
-1. Lists every active test with `GET /v1/experiments?status=active`.
+1. Lists every active test with `GET /v1/experiments?status=active`. Each list row carries the test group names.
 2. Keeps the ones whose `started_at` is exactly 7 or 14 whole days ago.
-3. Fetches each of those tests with `GET /v1/experiments/{id}`, for its test group names.
-4. Reads `GET /v1/experiments/{id}/results?breakdown=date` for the numbers and the per-day trend.
-5. Sends the figures to Claude for a short, decision-first summary.
-6. Posts the summary to a Slack incoming webhook.
+3. Reads `GET /v1/experiments/{id}/results?breakdown=date` for the numbers and the per-day trend.
+4. Sends the figures to Claude for a short, decision-first summary.
+5. Posts the summary to a Slack incoming webhook.
 
 You run it. Point a daily cron entry, an n8n schedule trigger, or a GitHub Action at it. ABConvert does not call you when a test reaches day 7, and webhook triggers are not available yet.
 
@@ -52,14 +51,7 @@ A day mark is one calendar day wide, so run this once a day. A run that is skipp
 
 ### Group names live on the test, not on the snapshot
 
-The results snapshot identifies each row by `test_group_index` and nothing else. Names, and which group is Control, live on the test. So the script fetches both:
-
-```js
-const [full, results] = await Promise.all([
-  abconvert.getExperiment(id),
-  abconvert.getResults(id, { breakdown: "date" }),
-]);
-```
+The results snapshot identifies each row by `test_group_index` and nothing else. Names, and which group is Control, live on the test, and the list rows already carry them: each row's `test_groups` holds `name`, `control`, and `split`. So the script reads the names off the list row it already has and fetches only the snapshot.
 
 Merchants rename test groups, so never label a row `Variant A` because its index is 1. Read the name off `test_groups[index].name`.
 
@@ -69,7 +61,7 @@ Merchants rename test groups, so never label a row `Variant A` because its index
 
 ### `breakdown=date`
 
-`date` is the only breakdown in v1. It adds a `breakdown.rows` array alongside the overall totals, one row per test group per day, each carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days so the summary can say whether a lift is stable or still moving.
+`date` is the only breakdown the snapshot read offers; for anything else, `POST /v1/experiments/{id}/results` runs a custom result query that groups by any of 15 dimensions (country, device, UTM fields, and more). Here, `breakdown=date` adds a `breakdown.rows` array alongside the overall totals, one row per test group per day, each carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days so the summary can say whether a lift is stable or still moving.
 
 ### Money, and the lift that is not there
 
