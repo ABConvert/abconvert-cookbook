@@ -149,7 +149,7 @@ const toNumber = (value) => {
 };
 
 /** Orders, revenue, and average order value per test group. */
-function analyze(rows) {
+function analyze(rows, testGroupNames = []) {
   if (!rows.length) return { empty: true };
 
   const header = rows[0];
@@ -172,14 +172,19 @@ function analyze(rows) {
   let unparsedTotals = 0;
 
   for (const row of body) {
-    const group = (row[columns.testGroup] ?? "").trim() || "(unlabeled)";
+    const cell = (row[columns.testGroup] ?? "").trim() || "(unlabeled)";
     const total = toNumber(row[columns.orderTotal]);
     if (total === null) unparsedTotals += 1;
 
-    const bucket = perGroup.get(group) ?? { group, orders: 0, revenue: 0 };
+    const bucket = perGroup.get(cell) ?? {
+      group: labelTestGroup(cell, testGroupNames),
+      index: testGroupIndex(cell),
+      orders: 0,
+      revenue: 0,
+    };
     bucket.orders += 1;
     bucket.revenue += total ?? 0;
-    perGroup.set(group, bucket);
+    perGroup.set(cell, bucket);
   }
 
   const groups = [...perGroup.values()]
@@ -187,9 +192,32 @@ function analyze(rows) {
       ...bucket,
       averageOrderValue: bucket.orders ? bucket.revenue / bucket.orders : 0,
     }))
-    .sort((a, b) => b.revenue - a.revenue);
+    // Test group order, so Control reads first. Rows whose cell is not an
+    // index keep their place at the end, ranked by revenue.
+    .sort((a, b) => {
+      if (a.index === null && b.index === null) return b.revenue - a.revenue;
+      if (a.index === null) return 1;
+      if (b.index === null) return -1;
+      return a.index - b.index;
+    });
 
   return { groups, rowCount: body.length, unparsedTotals };
+}
+
+/**
+ * The CSV's Test Group column carries the test group's index, not its name.
+ * Names live on the test, so the caller passes `test_groups[].name` in and a
+ * row gets the label a merchant recognizes. An index with no matching name
+ * falls back to the raw cell rather than inventing one.
+ */
+function testGroupIndex(cell) {
+  return /^\d+$/.test(cell) ? Number.parseInt(cell, 10) : null;
+}
+
+function labelTestGroup(cell, names) {
+  const index = testGroupIndex(cell);
+  if (index === null) return cell;
+  return names[index] ?? `Test group ${index}`;
 }
 
 async function main() {
@@ -246,8 +274,19 @@ async function main() {
   await writeFile(csvPath, csv, "utf8");
   console.log(`  Saved ${csvPath} (${csv.length.toLocaleString("en-US")} bytes)`);
 
+  // One extra read, so the table shows the names a merchant recognizes instead
+  // of the indices the CSV carries. A test that cannot be read still reports,
+  // labeled by index.
+  let testGroupNames = [];
+  try {
+    const experiment = await abconvert.getExperiment(EXPERIMENT_ID);
+    testGroupNames = (experiment.test_groups ?? []).map((group) => group.name);
+  } catch (error) {
+    console.log(`  Could not read test group names (${error.message}); labeling by index.`);
+  }
+
   const rows = parseCsv(csv);
-  const analysis = analyze(rows);
+  const analysis = analyze(rows, testGroupNames);
 
   if (analysis.empty) {
     console.log("The export has no rows for that range.");

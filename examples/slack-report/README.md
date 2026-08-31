@@ -4,18 +4,17 @@ Post a day 7 and day 14 summary of every running test to a Slack channel, writte
 
 ## What it does
 
-1. Lists every active test with `GET /v1/experiments?status=active`. Each list row carries the test group names.
+1. Lists every active test with `GET /v1/experiments?status=active`.
 2. Keeps the ones whose `started_at` is exactly 7 or 14 whole days ago.
 3. Reads `GET /v1/experiments/{id}/results?breakdown=date` for the numbers and the per-day trend.
-4. Sends the figures to Claude for a short, decision-first summary.
-5. Posts the summary to a Slack incoming webhook.
+4. Sends the figures to Claude for a short, decision-first summary, then posts it to a Slack incoming webhook. The system prompt in `summarize()` pins down `srm_status`, `outcome`, intervals, and money formatting: read it before you change the model or the wording.
 
-You run it. Point a daily cron entry, an n8n schedule trigger, or a GitHub Action at it. ABConvert does not call you when a test reaches day 7, and webhook triggers are not available yet.
+Run it once a day from your own scheduler: a cron entry, an n8n schedule trigger, or a GitHub Action. ABConvert does not call you when a test reaches day 7.
 
 ## Setup
 
 ```bash
-export ABCONVERT_API_TOKEN="abcv_live_..."     # read scope is enough
+export ABCONVERT_API_TOKEN="abcv_live_..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 node examples/slack-report/report.mjs
@@ -34,54 +33,33 @@ node examples/slack-report/report.mjs
 
 Start with `DRY_RUN=1 SKIP_LLM=1` to see exactly what the API returned before you wire in either service.
 
-## Reading the walkthrough
+## Walkthrough
 
-### Finding the tests that are due
+### Pick the day mark on `started_at`, not on `created_at`
 
-The list endpoint filters on `created_at`, not on `started_at`. A test drafted in March and launched in June has a `created_at` months before the day you care about, so the script filters on `started_at` in memory:
+The list endpoint filters on `created_at`. A test drafted in March and launched in June has a `created_at` months before the day you care about, so the script filters in memory:
 
 ```js
 const active = await abconvert.listAllExperiments({ status: "active" });
-const due = active.filter((e) => DAY_MARKS.includes(daysRunning(e.started_at)));
+const due = active
+  .map((experiment) => ({ experiment, dayMark: atDayMark(experiment, now) }))
+  .filter((entry) => entry.dayMark !== null);
 ```
 
-`listAllExperiments` walks the cursor for you. Lists come back as `{object: "list", data, has_more, next_cursor}`, and you pass `next_cursor` back as `?cursor=`.
+`atDayMark` floors whole days, so a test that started at 16:20 is not at day 7 until 16:20 seven days later. A skipped run skips that day's report.
 
-A day mark is one calendar day wide, so run this once a day. A run that is skipped entirely skips that day's marks with it: if the job did not run, no report goes out for the tests that hit day 7 that day.
+### Test group names live on the test, not on the snapshot
 
-### Group names live on the test, not on the snapshot
+The snapshot identifies each row by `test_group_index` and nothing else. The list row already carries `test_groups` with `name`, `control`, and `split`, so the script reads the names off the row it has and fetches only the snapshot. Merchants rename test groups, so never label a row `Variant A` because its index is 1. Read the name off `test_groups[index].name`.
 
-The results snapshot identifies each row by `test_group_index` and nothing else. Names, and which group is Control, live on the test, and the list rows already carry them: each row's `test_groups` holds `name`, `control`, and `split`. So the script reads the names off the list row it already has and fetches only the snapshot.
+### `breakdown=date` adds one row per test group per day
 
-Merchants rename test groups, so never label a row `Variant A` because its index is 1. Read the name off `test_groups[index].name`.
+`breakdown.rows` arrives alongside the overall totals, each row carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days. To group by any other dimension, use the custom result query in the [API reference](https://docs.abconvert.io/api-reference/overview).
 
-### A 202 means no snapshot yet
+### Money metrics are objects, and `lift` is sometimes null
 
-`GET /v1/experiments/{id}/results` answers 202 with no body when the analytics pipeline has not computed a snapshot. The client returns `null` for that case, and the report says so rather than printing zeros. Polling faster than the pipeline refreshes returns the same snapshot with an unchanged `computed_at`.
-
-### `breakdown=date`
-
-`date` is the only breakdown the snapshot read offers; for anything else, `POST /v1/experiments/{id}/results` runs a custom result query that groups by any of 15 dimensions (country, device, UTM fields, and more). Here, `breakdown=date` adds a `breakdown.rows` array alongside the overall totals, one row per test group per day, each carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days so the summary can say whether a lift is stable or still moving.
-
-### Money, and the lift that is not there
-
-Two shapes in the snapshot need handling before the numbers reach Slack, and the script does both in `lib/abconvert.mjs`:
-
-- **Money metrics are objects.** `revenue_per_visitor`, `average_order_value`, `profit_per_visitor`, and `revenue` come back as `{"amount": "3.87", "currency": "USD"}`. Dropping one into a template string prints `[object Object]`. `amount` carries as many decimal places as the measurement needs, so a `risk` of `"0.004"` is real: print it as sent, never rounded to cents.
-- **`lift` is null when no percentage exists.** Control's value is zero, or Control and the test group sit on opposite sides of zero, which `profit_per_visitor` reaches whenever costs cross revenue. `confidence_interval` and `credible_interval` are null there too. `describeComparison` quotes the lift and its interval where there is one, and falls back to `difference` with `frequentist.difference_interval` where there is not, so a real result never prints as `n/a`.
-
-### What the summary is told
-
-The system prompt pins down the parts that matter and are easy to get wrong:
-
-- Check `srm_status` first. `mismatch` means the traffic split is broken, so the numbers are not trustworthy.
-- Report `outcome` as the platform's call. Do not re-derive it from the p-value.
-- Quote every figure with its interval, never a bare point estimate.
-- Repeat an absolute difference as an absolute difference. Do not invent a percentage for a comparison that has none.
-- Repeat money as written. Do not round it.
-- On `insufficient_data`, say the test needs more traffic instead of extrapolating.
-
-`profit_per_visitor` reads `null` until COGS settings are configured. Omit it rather than reporting 0.
+- `revenue_per_visitor`, `average_order_value`, `profit_per_visitor`, and `revenue` come back as `{"amount": "3.87", "currency": "USD"}`. Interpolating one prints `[object Object]`. Print `amount` as sent: these values carry more than two decimals when the measurement needs them.
+- `lift` is null when no percentage exists, and `confidence_interval` and `credible_interval` are null with it. `describeComparison` quotes the lift and its interval where there is one, and falls back to `difference` with `frequentist.difference_interval` where there is not, so a real result never prints as `n/a`. The [API reference](https://docs.abconvert.io/api-reference/overview) names the cases.
 
 ## Ask Claude
 
@@ -96,7 +74,7 @@ Instead of scheduling the script, hand an agent the skill in [`skills/abconvert-
 ## Common mistakes
 
 - **Polling results on a tight loop.** The endpoint reads a stored snapshot and computes nothing. Reading it every minute burns your 60 reads per minute and returns the same `computed_at`.
-- **Labeling groups by index.** Index 1 is not always `Variant A`, and Control is not always index 0. Read `control` and `name` off the test.
-- **Treating a 202 as an error.** It means the pipeline has not run for this test yet. Retry after the next refresh.
+- **Labeling test groups by index.** Index 1 is not always `Variant A`, and Control is not always index 0. Read `control` and `name` off the test.
+- **Treating a 202 as an error.** It means the pipeline has not computed a snapshot for this test yet. `getResults` returns `null` for it, and the report says so instead of printing zeros. Retry after the next refresh.
 - **Reporting a lift without its interval.** A +6.2% lift whose interval spans zero is not a result.
 - **Interpolating a money metric into a string.** You get `[object Object]`. Format `{amount, currency}`, and keep every decimal place it came with.
