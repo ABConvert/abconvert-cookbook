@@ -13,7 +13,7 @@ ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, UR
 | [`examples/portfolio-dashboard/`](examples/portfolio-dashboard/) | Reads every store you hold a token for with `?include=results_summary` and writes one HTML and Markdown dashboard. |
 | [`examples/order-export/`](examples/order-export/) | Starts an async order export, polls the job, downloads the CSV, and runs a local analysis. |
 | [`skills/abconvert-public-api/`](skills/abconvert-public-api/) | A Claude skill you can drop into your own `.claude/skills/` so an agent drives the API correctly. |
-| [`AGENTS.md`](AGENTS.md) | The agent path: verbatim prompts you can paste into Claude Code, Cursor, or your own agent. |
+| [`ask-claude.md`](ask-claude.md) | The agent path: verbatim prompts you can paste into Claude Code, Cursor, or your own agent. |
 | [`lib/abconvert.mjs`](lib/abconvert.mjs) | The shared client every example imports. Auth, pagination, the error envelope, rate-limit backoff, and the money and comparison formatting the results snapshot needs. |
 
 ## Get an API token
@@ -34,6 +34,16 @@ Tokens carry scopes:
 `GET` requests need read. Every other method needs write, except `POST /v1/experiments/{id}/results` and `POST /v1/experiments/{id}/exports`, which read data and change nothing about the test. New tokens default to read, so grant write only to the integrations that manage tests. Of the examples here, only the guardrail monitor needs a write token.
 
 Treat a token like a password. Keep it in your secret manager, never in client-side code or a repository. Revoking a token in the admin takes effect immediately.
+
+## Run your first example
+
+```bash
+git clone https://github.com/ABConvert/abconvert-cookbook.git
+cd abconvert-cookbook
+cp .env.example .env        # then put your token in it
+set -a; source .env; set +a
+node examples/portfolio-dashboard/dashboard.mjs
+```
 
 ## Base URL and configuration
 
@@ -58,14 +68,14 @@ curl https://api.abconvert.io/v1/experiments \
 **You run every loop, timer, and job.** The API answers requests. It does not call you back, and it does not run your automation on your behalf.
 
 - Scheduling an hourly poll, a nightly report, or a retry queue is your job, in whatever runs it: cron, n8n, Zapier, a GitHub Action, a Lambda, or an agent.
-- ABConvert executes exactly one timer of its own: the native scheduler, which starts and ends a test inside the window you set with `PUT /v1/experiments/{id}/schedule`.
-- Webhook triggers are not available yet. Every flow in this cookbook polls. Push triggers arrive in a later version, and the polling recipes keep working when they do.
+- The native scheduler is the only automation the API runs for you: it starts and ends a test inside the window you set with `PUT /v1/experiments/{id}/schedule`.
+- The API does not send webhooks, so every flow in this cookbook polls.
 
 That boundary is why each example ships as a plain script with no runtime of its own. Point your scheduler at it.
 
 ## Rate limits
 
-Each token gets 60 reads and 10 writes per minute. `GET` is a read; everything else is a write.
+Each token gets 60 reads, 10 writes, and 10 result queries per minute. `GET` is a read. `POST /v1/experiments/{id}/results` draws the result-query budget; every other non-`GET`, including `POST /v1/experiments/{id}/exports`, draws the write budget.
 
 Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`. A 429 also carries `Retry-After` in seconds. `lib/abconvert.mjs` honors it and backs off; if you write your own client, honor it too, and never busy-loop writes.
 
@@ -98,7 +108,7 @@ Every error uses one shape on every status code:
 
 ## Reading results
 
-`GET /v1/experiments/{id}/results` answers 202 while the pipeline has not computed a snapshot yet. That is not an error and it is not JSON: treat it as "no data yet" and come back later. `lib/abconvert.mjs` returns `null` for it. Results refresh at most every few hours, so polling faster returns the same snapshot with an unchanged `computed_at`.
+`GET /v1/experiments/{id}/results` answers 202 while the pipeline has not computed a snapshot yet. That is not an error and it is not JSON: treat it as "no data yet" and wait the number of seconds in the `Retry-After` header before asking again. `lib/abconvert.mjs` returns `null` for it. ABConvert recomputes the snapshot about every 6 hours while a test runs, so polling faster returns the same snapshot with an unchanged `computed_at`; for fresher numbers, `POST /v1/experiments/{id}/results` computes on demand.
 
 Two shapes in the snapshot catch people out, and every example here handles both:
 
@@ -128,14 +138,6 @@ A test holds two or more **test groups**. The default names are `Control`, `Vari
 ## Requirements
 
 Node 20 or later. No dependencies, no build step, no framework. Every script uses the global `fetch`.
-
-```bash
-git clone https://github.com/ABConvert/abconvert-cookbook.git
-cd abconvert-cookbook
-cp .env.example .env        # then put your token in it
-set -a; source .env; set +a
-node examples/portfolio-dashboard/dashboard.mjs
-```
 
 ## Reference
 

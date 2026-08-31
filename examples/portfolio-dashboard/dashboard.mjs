@@ -202,13 +202,16 @@ function renderMarkdown({ rows, errors, generatedAt }) {
   lines.push("");
   lines.push(`Generated ${generatedAt}. ${rows.length} test(s) across ${new Set(rows.map((r) => r.store)).size} store(s).`);
   lines.push("");
-  lines.push("| Store | Test | Type | Status | Days | Visitors | Verdict | SRM | Best test group |");
+  lines.push("| Store | Test | Type | Status | Days | Visitors | Result | SRM | Best test group |");
   lines.push("|---|---|---|---|---|---|---|---|---|");
 
   for (const row of rows) {
     const best = row.best ? `${row.best.name} ${row.best.summary}` : (row.bestUnavailable ?? "n/a");
+    // Same substitution as the HTML badge: a broken split invalidates the
+    // outcome, so an SRM mismatch replaces it.
+    const result = row.srm === "mismatch" ? "SRM mismatch" : (row.outcome ?? "none yet");
     lines.push(
-      `| ${row.store} | ${row.id} ${row.name} | ${row.type} | ${row.status} | ${row.days ?? "n/a"} | ${row.visitors} | ${row.outcome ?? "none yet"} | ${row.srm ?? "unknown"} | ${best} |`,
+      `| ${row.store} | ${row.id} ${row.name} | ${row.type} | ${row.status} | ${row.days ?? "n/a"} | ${row.visitors} | ${result} | ${row.srm ?? "unknown"} | ${best} |`,
     );
   }
 

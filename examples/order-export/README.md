@@ -62,7 +62,7 @@ The job moves through `pending`, `processing`, and then `completed` or `failed`.
 
 ### The download link expires
 
-When `status` is `completed`, `url` holds a signed link that works until `expires_at`. Download it in the same run. A link stashed in a queue and fetched an hour later may be dead.
+When `status` is `completed`, `url` holds a signed link that works until `expires_at`, 7 days after the job completed. After that the job stays `completed` and `url` goes null, so branch on `url`, not on `status`.
 
 ### There is no row cap
 
@@ -70,14 +70,7 @@ The export is not capped, so a wide date range returns every attributed order. S
 
 ### The column schema is in beta
 
-The export carries the same columns as the ABConvert admin's order export, and that schema is in beta. Rather than hard coding column names that may move, the script matches them case insensitively against a candidate list:
-
-```js
-const COLUMN_CANDIDATES = {
-  testGroup: ["test_group", "test group", "variant", "variation", "group", ...],
-  orderTotal: ["total", "order_total", "total_price", "revenue", ...],
-};
-```
+The export carries the same columns as the ABConvert admin's order export, and that schema is in beta. Rather than hard coding column names that may move, the script tries several likely spellings for each field it needs, matched case insensitively (see `COLUMN_CANDIDATES` in the script).
 
 When it cannot find a column, it prints the header row it actually got and tells you which field is missing, instead of reporting zeros. Add the real name to the list and run it again.
 

@@ -4,12 +4,12 @@
  *
  * Flow:
  *   1. GET /experiments?status=active, then keep the tests whose `started_at`
- *      lands on one of the day marks you configured.
- *   2. GET /experiments/{id} for the test group names (the results snapshot
- *      identifies groups by index only).
- *   3. GET /experiments/{id}/results?breakdown=date for the numbers.
- *   4. Ask Claude for a short summary.
- *   5. POST the summary to a Slack incoming webhook.
+ *      lands on one of the day marks you configured. Each list row carries
+ *      the test group names, which the results snapshot identifies by index
+ *      only.
+ *   2. GET /experiments/{id}/results?breakdown=date for the numbers.
+ *   3. Ask Claude for a short summary.
+ *   4. POST the summary to a Slack incoming webhook.
  *
  * Run it from your own scheduler, once a day.
  *
@@ -30,7 +30,6 @@ import {
   MONEY_METRICS,
   describeComparison,
   formatQuantity,
-  reportWarnings,
   testGroupNames,
 } from "../../lib/abconvert.mjs";
 
@@ -221,14 +220,10 @@ async function main() {
 
   const reports = [];
   for (const { experiment, dayMark } of due) {
-    // The list response carries test group identity only, so fetch the test for
-    // its group names, and the snapshot for its numbers.
-    const [full, results] = await Promise.all([
-      abconvert.getExperiment(experiment.id),
-      abconvert.getResults(experiment.id, { breakdown: "date" }),
-    ]);
-    reportWarnings(`test ${experiment.id}`, full);
-    reports.push(renderTest({ experiment: full, results, dayMark }));
+    // The list row already carries the test group names (`name`, `control`,
+    // `split`), so only the snapshot needs fetching.
+    const results = await abconvert.getResults(experiment.id, { breakdown: "date" });
+    reports.push(renderTest({ experiment, results, dayMark }));
   }
 
   const raw = reports.join("\n\n");

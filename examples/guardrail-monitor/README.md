@@ -9,7 +9,7 @@ Poll results on a schedule and pause a test when a guardrail metric falls too fa
 3. For every test group other than Control, compares the guardrail metric's `lift` against your threshold.
 4. Calls `POST /v1/experiments/{id}/pause` when a breach clears all three gates.
 
-You run it. A cron entry every 15 to 60 minutes fits the pipeline's refresh cadence. Polling faster returns the same snapshot with an unchanged `computed_at` and spends your read budget for nothing. ABConvert does not push you an alert, and webhook triggers are not available yet.
+You run it. The snapshot recomputes about every 6 hours while a test runs, so a cron entry every few hours matches the cadence. Polling faster returns the same snapshot with an unchanged `computed_at` and spends your read budget for nothing. Each run costs one read per active test, so the read cost scales with how many tests are running. ABConvert does not push you an alert, and webhook triggers are not available yet.
 
 **This one needs a write token.** Pausing is a write, and new tokens default to read.
 
@@ -80,7 +80,7 @@ Pausing on a mismatch would look like a guardrail working and be a coin flip.
 
 ### Which row is Control
 
-The results snapshot marks Control by omission: its `vs_control` is `null`. The `control: true` flag lives on the test, so the script reads the control index from `GET /v1/experiments/{id}` and matches it to the snapshot by `test_group_index`, falling back to the snapshot's own null `vs_control` if a test carries no flag. Do not assume Control is index 0.
+The results snapshot marks Control by omission: its `vs_control` is `null`. The `control: true` flag lives on the test, and the list rows already carry each test group's `name`, `control`, and `split`, so the script reads the control index straight off the list row and matches it to the snapshot by `test_group_index`, falling back to the snapshot's own null `vs_control` if a test carries no flag. No per-test fetch is needed. Do not assume Control is index 0.
 
 ### Pausing is idempotent
 
