@@ -2,7 +2,7 @@
 
 Runnable recipes for the [ABConvert](https://abconvert.io) public REST API. Each example is one directory, one walkthrough, and one Node.js script you can read end to end in a few minutes.
 
-ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, URL redirect, checkout, and offer tests. The API lets you create those tests, move them through their lifecycle, read results, and export order-level data from your own code. The contract lives in the [API reference](https://docs.abconvert.io/api-reference/overview). The examples here show how to use it. The API calls the object an `experiment`. These docs say **test**, the same word as the ABConvert admin.
+ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, URL redirect, checkout, and offer tests. The API lets you create those tests, move them through their lifecycle, read results, and export order-level data from your own code. The contract lives in the [API reference](https://docs.abconvert.io/api-reference/overview). The examples here show how to use it.
 
 ## Start here
 
@@ -10,20 +10,22 @@ Work through the examples in order. Each one adds one API pattern to the last.
 
 | | Example | What you learn |
 |---|---|---|
-| 1 | [`portfolio-dashboard`](examples/portfolio-dashboard/) | Read every store you hold a token for with `?include=results_summary` and write one HTML and Markdown dashboard. Read scope is enough, and the first run produces output. |
-| 2 | [`order-export`](examples/order-export/) | Start an async order export, poll the job, download the CSV, and analyze it locally. Teaches the async-job pattern, still on read scope. |
-| 3 | [`slack-report`](examples/slack-report/) | Find tests that hit day 7 or day 14, read a per-day breakdown, summarize with Claude, and post to a Slack webhook. Composes the API with other services. |
-| 4 | [`guardrail-monitor`](examples/guardrail-monitor/) | Poll every active test and pause one when a guardrail metric breaches your threshold. The only recipe that writes. Run it with `DRY_RUN=1` first. |
+| 1 | [`portfolio-dashboard`](examples/portfolio-dashboard/) | Read every store you hold a token for with `?include=results_summary` and write one HTML and Markdown dashboard. |
+| 2 | [`order-export`](examples/order-export/) | Start an async order export, poll the job, download the CSV, and analyze it locally. |
+| 3 | [`slack-report`](examples/slack-report/) | Find tests that hit day 7 or day 14, read a per-day breakdown, summarize with Claude, and post to a Slack webhook. |
+| 4 | [`guardrail-monitor`](examples/guardrail-monitor/) | Poll every active test and pause one when a guardrail metric breaches your threshold. |
 
 Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client. It handles auth, pagination, the error envelope, rate-limit backoff, and results formatting.
 
-## Ask Claude
+## Ask an agent
 
-You can also drive the API with an agent instead of a script. Install the [skill](skills/abconvert-public-api/) so the agent knows the contract, then ask in plain language:
+You can also drive the API with an agent instead of a script. The hosted [MCP server](https://docs.abconvert.io/mcp/overview) is the fastest way to connect one. The [skill](skills/abconvert-public-api/) teaches an agent the REST API itself, the same endpoints these examples use. Copy it into your agent's skill directory:
 
 ```bash
 cp -r skills/abconvert-public-api ~/.claude/skills/
 ```
+
+Then ask in plain language:
 
 > "Create a 10% price test on my best-selling product, 50/50 split, run for 14 days."
 
@@ -33,7 +35,7 @@ cp -r skills/abconvert-public-api ~/.claude/skills/
 
 > "Summarize the results of test 3021 for a non-technical stakeholder. Lead with whether we should ship it."
 
-Each example's README holds prompts for its own flow. The skill makes the agent confirm before anything one-way or traffic-affecting: `start`, `end`, `archive`, and split changes on a running test. Use a script for flows that run unattended. Use the agent for open-ended questions, where you want the reasoning next to the numbers.
+Each example's README holds prompts for its own flow. Use a script for flows that run unattended. Use an agent for open-ended questions, where you want the reasoning next to the numbers.
 
 ## Get a token
 
@@ -55,16 +57,11 @@ node examples/portfolio-dashboard/dashboard.mjs
 
 Node 20 or later. No dependencies, no build step, no framework.
 
-Every script reads two environment variables. Each example's README lists the ones it adds.
-
-```bash
-export ABCONVERT_API_TOKEN="abcv_live_..."
-export ABCONVERT_API_BASE="https://api.abconvert.io/v1"   # optional, this is the default
-```
+Every script reads `ABCONVERT_API_TOKEN`. Each example's README lists the other variables it accepts.
 
 ## Before you write your own client
 
-The [API overview](https://docs.abconvert.io/api-reference/overview) documents the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. One rule shapes every recipe here: the API does not send webhooks yet, so you run every loop. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
+The [API overview](https://docs.abconvert.io/api-reference/overview) documents the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. ABConvert does not send webhooks yet, so every recipe polls.
 
 ## Reference
 
