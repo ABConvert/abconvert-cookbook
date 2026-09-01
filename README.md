@@ -15,15 +15,25 @@ Work through the examples in order. Each one adds one API pattern to the last.
 | 3 | [`slack-report`](examples/slack-report/) | Find tests that hit day 7 or day 14, read a per-day breakdown, summarize with Claude, and post to a Slack webhook. Composes the API with other services. |
 | 4 | [`guardrail-monitor`](examples/guardrail-monitor/) | Poll every active test and pause one when a guardrail metric breaches your threshold. The only recipe that writes. Run it with `DRY_RUN=1` first. |
 
+Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client. It handles auth, pagination, the error envelope, rate-limit backoff, and results formatting.
+
+## Ask Claude
+
 You can also drive the API with an agent instead of a script. Install the [skill](skills/abconvert-public-api/) so the agent knows the contract, then ask in plain language:
 
 ```bash
 cp -r skills/abconvert-public-api ~/.claude/skills/
 ```
 
-[`ask-claude.md`](ask-claude.md) holds prompts you can paste as written, for creating, previewing, launching, and analyzing tests.
+> "Create a 10% price test on my best-selling product, 50/50 split, run for 14 days."
 
-Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client. It handles auth, pagination, the error envelope, rate-limit backoff, and results formatting.
+> "Preview test 3021 and give me the preview link for each test group."
+
+> "Launch test 3021. Tell me first what launching it will change and whether any other running test conflicts with it."
+
+> "Summarize the results of test 3021 for a non-technical stakeholder. Lead with whether we should ship it."
+
+Each example's README holds prompts for its own flow. The skill makes the agent confirm before anything one-way or traffic-affecting: `start`, `end`, `archive`, and split changes on a running test. Use a script for flows that run unattended. Use the agent for open-ended questions, where you want the reasoning next to the numbers.
 
 ## Get a token
 
