@@ -17,14 +17,22 @@ Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client
 
 ## Ask an agent
 
-You can also drive the API with an agent instead of a script. The hosted [MCP server](https://docs.abconvert.io/mcp/overview) is the fastest way to connect one. The [skill](skills/abconvert-public-api/) teaches an agent the REST API itself, the same endpoints these examples use. It works in Claude Code, Codex, and Cursor:
+You can also drive the API with an agent instead of a script. The hosted [MCP server](https://docs.abconvert.io/mcp/overview) is the fastest way to connect one. The [skill](skills/abconvert-public-api/) teaches an agent the REST API itself, the same endpoints these examples use.
+
+### Claude Code
 
 ```bash
-# Claude Code
 cp -r skills/abconvert-public-api ~/.claude/skills/
 ```
 
-In Codex or Cursor, point the agent at [`SKILL.md`](skills/abconvert-public-api/SKILL.md) instead.
+### Codex or Cursor
+
+Both read `AGENTS.md`. Copy the skill into your project and point at it:
+
+```bash
+cp -r skills/abconvert-public-api your-project/
+echo "Before calling the ABConvert API, read abconvert-public-api/SKILL.md." >> your-project/AGENTS.md
+```
 
 Then ask in plain language:
 
@@ -37,7 +45,7 @@ Then ask in plain language:
 > "Summarize the results of test 3021 for a non-technical stakeholder. Lead with whether we should ship it."
 
 > [!TIP]
-> Connect your agent to Shopify's MCP server as well. A prompt like "my best-selling product" needs store data the ABConvert API does not hold. With Shopify connected, the agent resolves product names and sales rank into the product and product variant IDs the API takes.
+> Connect your agent to [Shopify's MCP servers](https://shopify.dev/docs/apps/build/storefront-mcp) as well. A prompt like "my best-selling product" needs store data the ABConvert API does not hold. With Shopify connected, the agent can search your catalog and turn product names into the product and product variant IDs the API takes.
 
 Use a script for flows that run unattended. Use an agent for open-ended questions, where you want the reasoning next to the numbers.
 
