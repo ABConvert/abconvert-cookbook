@@ -6,8 +6,8 @@ Read every store you hold a token for and write one HTML and one Markdown dashbo
 
 For each store token:
 
-1. Lists tests with `GET /v1/experiments?status=active&include=results_summary`, and the same call for `status=paused`. One read covers a page of 100 tests. Each row carries its results summary: outcome, SRM check, sample size, and the six metrics per test group.
-2. Reads `GET /v1/experiments/{id}/results` for the tests the summary says are decided, because lift, difference, intervals, and p-values live on that endpoint alone.
+1. Lists tests with [`GET /v1/experiments?status=active&include=results_summary`](https://docs.abconvert.io/api-reference/experiments/list-tests), and the same call for `status=paused`. One read covers a page of 100 tests. Each row carries its results summary: outcome, SRM check, sample size, and the six metrics per test group.
+2. Reads [`GET /v1/experiments/{id}/results`](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) for the tests the summary says are decided, because lift, difference, intervals, and p-values live on that endpoint alone.
 
 It writes `out/portfolio.html` and `out/portfolio.md`, sorted longest running first. Run it from your own scheduler: a nightly cron entry, a scheduled GitHub Action, or an n8n schedule trigger. ABConvert does not send a nightly digest, and webhooks are not available yet.
 

@@ -4,10 +4,10 @@ Poll results on a schedule and pause a test when a guardrail metric falls too fa
 
 ## What it does
 
-1. Lists every active test with `GET /v1/experiments?status=active`.
-2. Reads `GET /v1/experiments/{id}/results` for each one.
+1. Lists every active test with [`GET /v1/experiments?status=active`](https://docs.abconvert.io/api-reference/experiments/list-tests).
+2. Reads [`GET /v1/experiments/{id}/results`](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) for each one.
 3. For every test group other than Control, compares the guardrail metric's `lift` against your threshold.
-4. Calls `POST /v1/experiments/{id}/pause` when a breach passes all three gates:
+4. Calls [`POST /v1/experiments/{id}/pause`](https://docs.abconvert.io/api-reference/lifecycle/pause-an-active-test) when a breach passes all three gates:
    - The drop is larger than `GUARDRAIL_MAX_DROP`.
    - Both test groups have at least `GUARDRAIL_MIN_SAMPLE` visitors.
    - The difference is significant at `GUARDRAIL_MAX_P_VALUE`.
@@ -47,5 +47,5 @@ Run it with `DRY_RUN=1` for a week before you let it pause anything. You are loo
 ## Common mistakes
 
 - **Firing on lift alone.** Without a sample floor and a significance gate, the monitor pauses winners that started slowly.
-- **Ending instead of pausing.** `end` cannot be undone. Automation gets the reversible action: `pause` is idempotent and reverses with `POST /v1/experiments/{id}/resume`.
+- **Ending instead of pausing.** `end` cannot be undone. Automation gets the reversible action: `pause` is idempotent and reverses with [`POST /v1/experiments/{id}/resume`](https://docs.abconvert.io/api-reference/lifecycle/resume-a-paused-test).
 - **Watching `profit_per_visitor` without COGS.** It reads `null` until COGS settings are configured, so the guardrail can never fire on it.

@@ -4,9 +4,9 @@ Post a day 7 and day 14 summary of every running test to a Slack channel, writte
 
 ## What it does
 
-1. Lists every active test with `GET /v1/experiments?status=active`.
+1. Lists every active test with [`GET /v1/experiments?status=active`](https://docs.abconvert.io/api-reference/experiments/list-tests).
 2. Keeps the ones whose `started_at` is exactly 7 or 14 whole days ago.
-3. Reads `GET /v1/experiments/{id}/results?breakdown=date` for the numbers and the per-day trend. To group by any other dimension, use the [custom result query](https://docs.abconvert.io/api-reference/results/create-a-custom-result-query).
+3. Reads [`GET /v1/experiments/{id}/results?breakdown=date`](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) for the numbers and the per-day trend. To group by any other dimension, use the [custom result query](https://docs.abconvert.io/api-reference/results/create-a-custom-result-query).
 4. Sends the figures to Claude for a short summary, then posts the summary to a Slack incoming webhook. The system prompt in `summarize()` sets the rules for `srm_status`, `outcome`, intervals, and money formatting. Read the prompt before you change the model or the wording.
 
 Run it once a day from your own scheduler: a cron entry, an n8n schedule trigger, or a GitHub Action. ABConvert does not call you when a test reaches day 7.

@@ -64,7 +64,10 @@ Use a script for flows that run unattended. Use an agent for open-ended question
 2. Go to **Settings > MCP & API Access**.
 3. Create a token and copy it. The plaintext is shown once.
 
-A token reaches exactly one shop. New tokens default to read scope, which runs examples 1 to 3. Only the guardrail monitor needs write scope, to pause a test. [Authentication](https://docs.abconvert.io/api-reference/authentication) covers scopes. Treat a token like a password: keep it in your secret manager, never in client-side code or a repository.
+A token reaches exactly one shop. New tokens default to read scope, which runs examples 1 to 3. Only the guardrail monitor needs write scope, to pause a test. [Authentication](https://docs.abconvert.io/api-reference/authentication) covers scopes.
+
+> [!WARNING]
+> Treat a token like a password: keep it in your secret manager, never in client-side code or a repository.
 
 ## Run your first example
 
