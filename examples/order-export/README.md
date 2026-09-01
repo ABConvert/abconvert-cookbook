@@ -7,13 +7,13 @@ Use this when the results snapshot does not answer your question. The snapshot g
 ## What it does
 
 1. `POST /v1/experiments/{id}/exports` with a `date_range`. The API answers 202 with a job.
-2. `GET /v1/exports/{id}` on a loop until `status` is `completed` or `failed`. You run the loop; nothing calls you back.
+2. `GET /v1/exports/{id}` on a loop until `status` is `completed` or `failed`. You run the loop. Nothing calls you back.
 3. Downloads the signed `url` before `expires_at`.
 4. Reads the test for its test group names, then parses the CSV and prints orders, revenue, and average order value per test group.
 
 Read scope is enough to create an export. It still spends write budget on the rate limit. See [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits) and the [export reference](https://docs.abconvert.io/api-reference/exports/create-an-export-job).
 
-The mechanics — the calendar-day date range, the derived idempotency key, the poll loop, matching the beta column schema — are explained inline in [`export.mjs`](export.mjs), next to the code that handles each one.
+[`export.mjs`](export.mjs) explains the mechanics inline, next to the code: the calendar-day date range, the derived idempotency key, the poll loop, and the beta column matching.
 
 ## Setup
 
@@ -46,7 +46,7 @@ node examples/order-export/export.mjs
 
 ## Common mistakes
 
-- **Saving the download URL for later.** It is signed and expires 7 days out. After `expires_at` the job still reads `completed` with `url` null, so branch on `url`, not on `status`.
+- **Saving the download URL for later.** The URL is signed and expires after 7 days. After `expires_at` the job still reads `completed` with `url` null, so check `url`, not `status`.
 - **Sending timestamps in `date_range`.** Both bounds are calendar days: `2026-07-01`, not `2026-07-01T00:00:00Z`.
 - **Reusing an idempotency key with a different date range.** That returns 409 `idempotency_key_in_use`. One key per distinct request.
 - **Reading the `Test Group` column as a name.** It carries the test group's index (`0`, `1`, `2`). Names live on the test, so resolve them from `test_groups[index].name` before showing a row to anyone. This script does that with one extra read.

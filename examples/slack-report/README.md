@@ -7,11 +7,11 @@ Post a day 7 and day 14 summary of every running test to a Slack channel, writte
 1. Lists every active test with `GET /v1/experiments?status=active`.
 2. Keeps the ones whose `started_at` is exactly 7 or 14 whole days ago.
 3. Reads `GET /v1/experiments/{id}/results?breakdown=date` for the numbers and the per-day trend. To group by any other dimension, use the [custom result query](https://docs.abconvert.io/api-reference/results/create-a-custom-result-query).
-4. Sends the figures to Claude for a short, decision-first summary, then posts it to a Slack incoming webhook. The system prompt in `summarize()` pins down `srm_status`, `outcome`, intervals, and money formatting: read it before you change the model or the wording.
+4. Sends the figures to Claude for a short summary, then posts the summary to a Slack incoming webhook. The system prompt in `summarize()` sets the rules for `srm_status`, `outcome`, intervals, and money formatting. Read the prompt before you change the model or the wording.
 
 Run it once a day from your own scheduler: a cron entry, an n8n schedule trigger, or a GitHub Action. ABConvert does not call you when a test reaches day 7.
 
-The mechanics — why the day mark is picked on `started_at` rather than `created_at`, where test group names live, formatting money objects, the `lift`-is-null fallback — are explained inline in [`report.mjs`](report.mjs), next to the code that handles each one.
+[`report.mjs`](report.mjs) explains the mechanics inline, next to the code: why the day mark uses `started_at` rather than `created_at`, where test group names live, how to format money objects, and the fallback when `lift` is null.
 
 ## Setup
 

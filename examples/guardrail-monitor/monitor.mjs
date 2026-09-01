@@ -69,8 +69,8 @@ function evaluateGroup({ group, controlSampleSize }) {
   if (lift === null || lift === undefined) {
     // A null `lift` is not a missing number. The contract publishes it for two
     // real states: Control's value is zero, or Control and this test group sit
-    // on strictly opposite sides of zero — reachable on profit_per_visitor,
-    // which goes negative when costs exceed revenue.
+    // on strictly opposite sides of zero. That state is reachable on
+    // profit_per_visitor, which goes negative when costs exceed revenue.
     //
     // `MAX_DROP` is a percentage of Control, and neither state has one. So the
     // guardrail cannot judge this group. Never treat that as "within the

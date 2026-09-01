@@ -7,13 +7,20 @@ Poll results on a schedule and pause a test when a guardrail metric falls too fa
 1. Lists every active test with `GET /v1/experiments?status=active`.
 2. Reads `GET /v1/experiments/{id}/results` for each one.
 3. For every test group other than Control, compares the guardrail metric's `lift` against your threshold.
-4. Calls `POST /v1/experiments/{id}/pause` when a breach clears all three gates: the drop exceeds `GUARDRAIL_MAX_DROP`, both test groups carry at least `GUARDRAIL_MIN_SAMPLE` visitors, and the difference is significant at `GUARDRAIL_MAX_P_VALUE`. A metric measured on 40 visitors swings by 30% on noise, so without the last two gates the monitor pauses healthy tests on their first morning.
+4. Calls `POST /v1/experiments/{id}/pause` when a breach passes all three gates:
+   - The drop is larger than `GUARDRAIL_MAX_DROP`.
+   - Both test groups have at least `GUARDRAIL_MIN_SAMPLE` visitors.
+   - The difference is significant at `GUARDRAIL_MAX_P_VALUE`.
 
-Run it from your own scheduler, every few hours. The endpoint reads a stored snapshot on the recompute cadence in the [results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot), so polling faster returns the same numbers. ABConvert does not push you an alert, and webhook triggers are not available yet.
+   The last two gates stop false alarms. A metric measured on 40 visitors swings by 30% on noise, so without them the monitor pauses healthy tests on their first morning.
 
-The edge cases — a null `lift`, a sample ratio mismatch, finding which row is Control, why the action is `pause` and never `end` — are handled and explained inline in [`monitor.mjs`](monitor.mjs). Read it before you tune anything. `pause` also runs no entitlement check, so the monitor keeps working when a subscription lapses or a usage cap is reached. See [Feature availability](https://docs.abconvert.io/api-reference/overview#feature-availability).
+Run it from your own scheduler, every few hours. Polling faster returns the same numbers: the endpoint reads a stored snapshot, which recomputes about every 6 hours ([results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot)). ABConvert does not send alerts, and webhooks are not available yet.
 
-**Read scope is enough to start.** Everything up to the pause is a read, so the `DRY_RUN=1` run below works on a read token, which is what new tokens default to. Grant write only once you let it pause for real.
+[`monitor.mjs`](monitor.mjs) handles the edge cases and explains each one inline: a null `lift`, a sample ratio mismatch, finding which row is Control, and why the action is `pause` and never `end`. Read it before you tune anything.
+
+`pause` runs no entitlement check, so the monitor keeps working when a subscription lapses or a usage cap is reached. See [Feature availability](https://docs.abconvert.io/api-reference/overview#feature-availability).
+
+**Read scope is enough to start.** Everything up to the pause is a read, so the `DRY_RUN=1` run below works on a read token. New tokens default to read scope. Grant write only when you let it pause for real.
 
 ## Setup
 
