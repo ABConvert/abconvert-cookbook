@@ -2,38 +2,30 @@
 
 Runnable recipes for the [ABConvert](https://abconvert.io) public REST API. Each example is one directory, one walkthrough, and one Node.js script you can read end to end in a few minutes.
 
-ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, URL redirect, checkout, and offer tests. The API lets you create those tests, move them through their lifecycle, read results, and export order-level data from your own code.
+ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, URL redirect, checkout, and offer tests. The API lets you create those tests, move them through their lifecycle, read results, and export order-level data from your own code. The contract lives in the [API reference](https://docs.abconvert.io/api-reference/overview). The examples here show how to use it. The API calls the object an `experiment`. These docs say **test**, the same word as the ABConvert admin.
 
-## What is in here
+## Start here
 
-| Example | What it does |
-|---|---|
-| [`examples/slack-report/`](examples/slack-report/) | Finds tests that hit day 7 or day 14, reads their results with a per-day breakdown, summarizes them with Claude, and posts to a Slack webhook. |
-| [`examples/guardrail-monitor/`](examples/guardrail-monitor/) | Polls results for every active test and pauses one when a guardrail metric breaches your threshold. |
-| [`examples/portfolio-dashboard/`](examples/portfolio-dashboard/) | Reads every store you hold a token for with `?include=results_summary` and writes one HTML and Markdown dashboard. |
-| [`examples/order-export/`](examples/order-export/) | Starts an async order export, polls the job, downloads the CSV, and runs a local analysis. |
-| [`skills/abconvert-public-api/`](skills/abconvert-public-api/) | A Claude skill you can drop into your own `.claude/skills/` so an agent drives the API correctly. |
-| [`ask-claude.md`](ask-claude.md) | The agent path: verbatim prompts you can paste into Claude Code, Cursor, or your own agent. |
-| [`lib/abconvert.mjs`](lib/abconvert.mjs) | The shared client every example imports. Auth, pagination, the error envelope, rate-limit backoff, and the money and comparison formatting the results snapshot needs. |
+Work through the examples in order. Each one adds one API pattern to the last.
 
-## Get an API token
+| | Example | What you learn |
+|---|---|---|
+| 1 | [`portfolio-dashboard`](examples/portfolio-dashboard/) | Read every store you hold a token for with `?include=results_summary` and write one HTML and Markdown dashboard. Read scope is enough, and the first run produces output. |
+| 2 | [`order-export`](examples/order-export/) | Start an async order export, poll the job, download the CSV, and analyze it locally. Teaches the async-job pattern, still on read scope. |
+| 3 | [`slack-report`](examples/slack-report/) | Find tests that hit day 7 or day 14, read a per-day breakdown, summarize with Claude, and post to a Slack webhook. Composes the API with other services. |
+| 4 | [`guardrail-monitor`](examples/guardrail-monitor/) | Poll every active test and pause one when a guardrail metric breaches your threshold. The only recipe that writes. Run it with `DRY_RUN=1` first. |
+
+You can also drive the API with an agent instead of a script. [`ask-claude.md`](ask-claude.md) holds prompts you can paste as written. [`skills/abconvert-public-api/`](skills/abconvert-public-api/) is a skill you drop into your own `.claude/skills/` so the agent knows the contract.
+
+Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client. It handles auth, pagination, the error envelope, rate-limit backoff, and results formatting.
+
+## Get a token
 
 1. Open the ABConvert admin.
 2. Go to **Settings > Integrations**.
 3. Create a token and copy it. The plaintext is shown once.
 
-A token belongs to one shop and reaches that shop only. If you manage several stores, hold one token per store.
-
-Tokens carry scopes:
-
-| Scope | Grants |
-|---|---|
-| `read_experiments` | List and retrieve tests, read results, and create, poll, and download exports |
-| `write_experiments` | Everything read grants, plus create, update, lifecycle actions, and schedule changes |
-
-`GET` requests need read. Every other method needs write, except `POST /v1/experiments/{id}/results` and `POST /v1/experiments/{id}/exports`, which read data and change nothing about the test. New tokens default to read, so grant write only to the integrations that manage tests. Of the examples here, only the guardrail monitor needs a write token.
-
-Treat a token like a password. Keep it in your secret manager, never in client-side code or a repository. Revoking a token in the admin takes effect immediately.
+A token reaches exactly one shop. New tokens default to read scope, which runs examples 1 to 3. Only the guardrail monitor needs write scope, to pause a test. [Authentication](https://docs.abconvert.io/api-reference/authentication) covers scopes. Treat a token like a password: keep it in your secret manager, never in client-side code or a repository.
 
 ## Run your first example
 
@@ -45,104 +37,26 @@ set -a; source .env; set +a
 node examples/portfolio-dashboard/dashboard.mjs
 ```
 
-## Base URL and configuration
+Node 20 or later. No dependencies, no build step, no framework.
 
-Every script reads two environment variables:
+Every script reads two environment variables. Each example's README lists the ones it adds.
 
 ```bash
 export ABCONVERT_API_TOKEN="abcv_live_..."
 export ABCONVERT_API_BASE="https://api.abconvert.io/v1"   # optional, this is the default
 ```
 
-Individual examples add their own variables. Each README lists them.
+## Before you write your own client
 
-Send the token as a bearer token on every request:
+The [API overview](https://docs.abconvert.io/api-reference/overview) documents the behavior every integration hits: the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. Three rules matter in every recipe here:
 
-```bash
-curl https://api.abconvert.io/v1/experiments \
-  --header "Authorization: Bearer $ABCONVERT_API_TOKEN"
-```
-
-## Who runs the loop
-
-**You run every loop, timer, and job.** The API answers requests. It does not call you back, and it does not run your automation on your behalf.
-
-- Scheduling an hourly poll, a nightly report, or a retry queue is your job, in whatever runs it: cron, n8n, Zapier, a GitHub Action, a Lambda, or an agent.
-- The native scheduler is the only automation the API runs for you: it starts and ends a test inside the window you set with `PUT /v1/experiments/{id}/schedule`.
-- The API does not send webhooks, so every flow in this cookbook polls.
-
-That boundary is why each example ships as a plain script with no runtime of its own. Point your scheduler at it.
-
-## Rate limits
-
-Each token gets 60 reads, 10 writes, and 10 result queries per minute. `GET` is a read. `POST /v1/experiments/{id}/results` draws the result-query budget; every other non-`GET`, including `POST /v1/experiments/{id}/exports`, draws the write budget.
-
-Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`. A 429 also carries `Retry-After` in seconds. `lib/abconvert.mjs` honors it and backs off; if you write your own client, honor it too, and never busy-loop writes.
-
-Because a portfolio job multiplies requests by store count, read the pacing note in [`examples/portfolio-dashboard/README.md`](examples/portfolio-dashboard/README.md) before you point one at 40 stores.
-
-## Errors
-
-Every error uses one shape on every status code:
-
-```json
-{
-  "error": {
-    "type": "validation_error",
-    "code": "split_sum_invalid",
-    "message": "Splits across test groups must sum to 100.",
-    "param": "test_groups",
-    "findings": [
-      { "severity": "error", "code": "split_sum_invalid", "param": "test_groups", "message": "..." }
-    ]
-  }
-}
-```
-
-- `type` is one of `invalid_request_error`, `authentication_error`, `permission_error`, `not_found_error`, `conflict_error`, `validation_error`, `rate_limit_error`, `api_error`.
-- A 422 lists every blocking finding in `findings`. Fix all of them and retry once, rather than one at a time.
-- A 409 `invalid_status_transition` carries `details.allowed_actions`, so branch on that instead of parsing the message.
-- A success response can carry a top-level `warnings` array. A 2xx with warnings is not a clean pass. Print them.
-
-`lib/abconvert.mjs` turns any error response into an `AbconvertApiError` whose `describe()` prints the status, type, code, message, and every finding.
-
-## Reading results
-
-`GET /v1/experiments/{id}/results` answers 202 while the pipeline has not computed a snapshot yet. That is not an error and it is not JSON: treat it as "no data yet" and wait the number of seconds in the `Retry-After` header before asking again. `lib/abconvert.mjs` returns `null` for it. ABConvert recomputes the snapshot about every 6 hours while a test runs, so polling faster returns the same snapshot with an unchanged `computed_at`; for fresher numbers, `POST /v1/experiments/{id}/results` computes on demand.
-
-Two shapes in the snapshot catch people out, and every example here handles both:
-
-**Money is an object, and its decimals matter.** `revenue_per_visitor`, `average_order_value`, `profit_per_visitor`, and `revenue` come back as `{"amount": "3.87", "currency": "USD"}`, as do the comparison fields derived from them. `amount` is a decimal string carrying as many places as the measurement needs, so an expected loss of `"0.004"` is real. Parse it as a decimal, print it as sent, and never round to two places.
-
-**A comparison can have a difference and no percentage.** Each metric under `vs_control` carries both `difference` (always statable, in the metric's own unit) and `lift` (the same change as a fraction of Control). `lift` is null when Control's value is zero, and when Control and the test group sit on opposite sides of zero, which `profit_per_visitor` reaches whenever costs cross revenue. `confidence_interval` and `credible_interval` bound `lift`, so they are null there too.
-
-So read `difference` for direction and size, quote `lift` only when it is there, and fall back to `frequentist.difference_interval` for the bound:
-
-```js
-import { describeComparison } from "./lib/abconvert.mjs";
-
-// "+6.2% (-1.1% to +13.4%)", or "+0.41 USD vs Control (-0.06 USD to +0.88 USD; ...)"
-describeComparison(group.vs_control.profit_per_visitor, { metric: "profit_per_visitor" });
-```
-
-Every metric field is nullable. Guard each one you read.
-
-## Terminology
-
-The API calls the object an `experiment`: endpoints, fields, and identifiers all use that word. These docs call it a **test**, which matches the ABConvert admin. Field names in code stay exactly as the contract defines them.
-
-A test holds two or more **test groups**. The default names are `Control`, `Variant A`, and `Variant B`. Merchants rename them freely, so read the names off the test rather than assuming the defaults. A visitor is assigned to a test group, which might be Control.
-
-`product variant` always means the Shopify catalog object. A bare `variant` always means an A/B test group.
-
-## Requirements
-
-Node 20 or later. No dependencies, no build step, no framework. Every script uses the global `fetch`.
+- **The API does not send webhooks, and you run every loop.** The API answers requests. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
+- **Results arrive as a snapshot.** [`GET /v1/experiments/{id}/results`](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) answers 202 with `Retry-After` until one is computed. That is not an error. `lib/abconvert.mjs` returns `null` for it.
+- **Money is a decimal string, and `lift` can be null.** Parse `amount` as a decimal and print it as sent. When no percentage against Control exists, read `difference` instead. The [results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) names the cases, and `describeComparison` in the client handles both.
 
 ## Reference
 
 - API reference and OpenAPI contract: <https://docs.abconvert.io/api-reference/overview>
-- The skill in [`skills/abconvert-public-api/`](skills/abconvert-public-api/) is the condensed version an agent reads.
 
 ## License
 

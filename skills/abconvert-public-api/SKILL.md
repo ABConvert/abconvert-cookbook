@@ -11,7 +11,7 @@ The full contract is the API reference at https://docs.abconvert.io/api-referenc
 
 ## Inputs (collect before doing anything)
 
-1. **Base URL.** Read it from `ABCONVERT_API_BASE` when the user has set one; otherwise use production, `https://api.abconvert.io/v1`.
+1. **Base URL.** Read it from `ABCONVERT_API_BASE` when the user has set one. Otherwise use the default, `https://api.abconvert.io/v1`.
 2. **API token.** From `ABCONVERT_API_TOKEN` or from the user. Never print a full token; show the last 4 characters only.
 3. **Which shop.** A token is scoped to exactly one shop. Multi-store work needs one token per store.
 

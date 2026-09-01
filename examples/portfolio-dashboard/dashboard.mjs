@@ -139,7 +139,7 @@ function toRow({ store, experiment, results }) {
   //
   // Rank on `difference`, which every comparison carries. Ranking on `lift`
   // drops the group whose lift is null, and that is the group that crossed
-  // zero — the one most worth looking at.
+  // zero, the one most worth looking at.
   const candidates = (results.test_groups ?? [])
     .filter((group) => group.vs_control?.[metric])
     .map((group) => ({
