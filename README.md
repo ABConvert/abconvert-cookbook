@@ -27,20 +27,14 @@ cp -r skills/abconvert-public-api ~/.claude/skills/
 
 ### Codex
 
-Codex reads `AGENTS.md`. Copy the skill into your project and point at it:
-
 ```bash
-cp -r skills/abconvert-public-api your-project/
-echo "Before calling the ABConvert API, read abconvert-public-api/SKILL.md." >> your-project/AGENTS.md
+cp -r skills/abconvert-public-api ~/.codex/skills/
 ```
 
 ### Cursor
 
-Cursor reads `AGENTS.md` too, so the same two lines work:
-
 ```bash
-cp -r skills/abconvert-public-api your-project/
-echo "Before calling the ABConvert API, read abconvert-public-api/SKILL.md." >> your-project/AGENTS.md
+cp -r skills/abconvert-public-api ~/.cursor/skills/
 ```
 
 Then ask in plain language:
