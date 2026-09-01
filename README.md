@@ -25,9 +25,18 @@ You can also drive the API with an agent instead of a script. The hosted [MCP se
 cp -r skills/abconvert-public-api ~/.claude/skills/
 ```
 
-### Codex or Cursor
+### Codex
 
-Both read `AGENTS.md`. Copy the skill into your project and point at it:
+Codex reads `AGENTS.md`. Copy the skill into your project and point at it:
+
+```bash
+cp -r skills/abconvert-public-api your-project/
+echo "Before calling the ABConvert API, read abconvert-public-api/SKILL.md." >> your-project/AGENTS.md
+```
+
+### Cursor
+
+Cursor reads `AGENTS.md` too, so the same two lines work:
 
 ```bash
 cp -r skills/abconvert-public-api your-project/
@@ -45,7 +54,7 @@ Then ask in plain language:
 > "Summarize the results of test 3021 for a non-technical stakeholder. Lead with whether we should ship it."
 
 > [!TIP]
-> Connect your agent to [Shopify's MCP servers](https://shopify.dev/docs/apps/build/storefront-mcp) as well. A prompt like "my best-selling product" needs store data the ABConvert API does not hold. With Shopify connected, the agent can search your catalog and turn product names into the product and product variant IDs the API takes.
+> Connect your agent to your Shopify store as well ([shopify.com/build-with-ai](https://www.shopify.com/build-with-ai)). A prompt like "my best-selling product" needs store data the ABConvert API does not hold. With Shopify connected, the agent can look up products and orders and turn names into the product and product variant IDs the API takes.
 
 Use a script for flows that run unattended. Use an agent for open-ended questions, where you want the reasoning next to the numbers.
 
