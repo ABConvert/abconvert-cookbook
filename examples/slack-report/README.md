@@ -25,7 +25,7 @@ node examples/slack-report/report.mjs
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `ABCONVERT_API_TOKEN` | yes | | Bearer token for one shop. Read scope is enough. |
-| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
+| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | You rarely need to set it. |
 | `ANTHROPIC_API_KEY` | unless `SKIP_LLM=1` | | Claude API key. |
 | `SLACK_WEBHOOK_URL` | unless `DRY_RUN=1` | | Slack incoming webhook. |
 | `REPORT_DAY_MARKS` | no | `7,14` | Which day marks to report on. |

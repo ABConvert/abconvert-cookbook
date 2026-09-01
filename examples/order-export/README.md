@@ -26,7 +26,7 @@ node examples/order-export/export.mjs
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `ABCONVERT_API_TOKEN` | yes | | Bearer token for one shop. Read scope is enough. |
-| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
+| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | You rarely need to set it. |
 | `EXPORT_EXPERIMENT_ID` | yes | | The test's numeric ID as a string, for example `"3021"`. |
 | `EXPORT_GTE` | no | 29 days ago | Start of the range, a calendar day (`2026-08-01`). Inclusive. |
 | `EXPORT_LTE` | no | today | End of the range, a calendar day. Inclusive. |

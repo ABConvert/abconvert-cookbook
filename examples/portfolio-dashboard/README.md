@@ -27,7 +27,7 @@ open out/portfolio.html
 |---|---|---|---|
 | `ABCONVERT_API_TOKENS` | yes | | Comma separated `label=token` pairs, one per store. Read scope is enough. |
 | `ABCONVERT_API_TOKEN` | | | Accepted instead, for a single store. |
-| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
+| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | You rarely need to set it. |
 | `DASHBOARD_OUT_DIR` | no | `./out` | Where the two files land. |
 | `DASHBOARD_STATUSES` | no | `active,paused` | Which statuses to include. |
 | `DASHBOARD_DETAIL` | no | `decided` | Which tests get a full snapshot read: `decided` (outcome `winner` or `loser`), `all`, or `none`. |

@@ -34,7 +34,7 @@ DRY_RUN=1 node examples/guardrail-monitor/monitor.mjs
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `ABCONVERT_API_TOKEN` | yes | | Bearer token for one shop. Read scope runs `DRY_RUN`; write scope is needed to pause. |
-| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | Override for a dev backend. |
+| `ABCONVERT_API_BASE` | no | `https://api.abconvert.io/v1` | You rarely need to set it. |
 | `GUARDRAIL_METRIC` | no | `conversion_rate` | One of `revenue_per_visitor`, `average_order_value`, `conversion_rate`, `profit_per_visitor`, `add_to_cart_rate`, `reached_checkout_rate`. |
 | `GUARDRAIL_MAX_DROP` | no | `0.10` | Relative drop that counts as a breach, as a ratio of Control: `0.10` means 10% below. |
 | `GUARDRAIL_MIN_SAMPLE` | no | `1000` | Visitors required in both test groups before the guardrail can fire. |
