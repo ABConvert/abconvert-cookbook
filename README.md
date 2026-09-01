@@ -54,11 +54,7 @@ export ABCONVERT_API_BASE="https://api.abconvert.io/v1"   # optional, this is th
 
 ## Before you write your own client
 
-The [API overview](https://docs.abconvert.io/api-reference/overview) documents the behavior every integration hits: the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. Three rules matter in every recipe here:
-
-- **The API does not send webhooks, and you run every loop.** The API answers requests. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
-- **Results arrive as a snapshot.** [`GET /v1/experiments/{id}/results`](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) answers 202 with `Retry-After` until one is computed. That is not an error. `lib/abconvert.mjs` returns `null` for it.
-- **Money is a decimal string, and `lift` can be null.** Parse `amount` as a decimal and print it as sent. When no percentage against Control exists, read `difference` instead. The [results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) names the cases, and `describeComparison` in the client handles both.
+The [API overview](https://docs.abconvert.io/api-reference/overview) documents the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. One rule shapes every recipe here: the API does not send webhooks, so you run every loop. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
 
 ## Reference
 
