@@ -15,7 +15,13 @@ Work through the examples in order. Each one adds one API pattern to the last.
 | 3 | [`slack-report`](examples/slack-report/) | Find tests that hit day 7 or day 14, read a per-day breakdown, summarize with Claude, and post to a Slack webhook. Composes the API with other services. |
 | 4 | [`guardrail-monitor`](examples/guardrail-monitor/) | Poll every active test and pause one when a guardrail metric breaches your threshold. The only recipe that writes. Run it with `DRY_RUN=1` first. |
 
-You can also drive the API with an agent instead of a script. [`ask-claude.md`](ask-claude.md) holds prompts you can paste as written. [`skills/abconvert-public-api/`](skills/abconvert-public-api/) is a skill you drop into your own `.claude/skills/` so the agent knows the contract.
+You can also drive the API with an agent instead of a script. Install the [skill](skills/abconvert-public-api/) so the agent knows the contract, then ask in plain language:
+
+```bash
+cp -r skills/abconvert-public-api ~/.claude/skills/
+```
+
+[`ask-claude.md`](ask-claude.md) holds prompts you can paste as written, for creating, previewing, launching, and analyzing tests.
 
 Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client. It handles auth, pagination, the error envelope, rate-limit backoff, and results formatting.
 
