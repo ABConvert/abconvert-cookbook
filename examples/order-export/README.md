@@ -11,7 +11,7 @@ Use this when the results snapshot does not answer your question. The snapshot g
 3. Downloads the signed `url` before `expires_at`.
 4. Reads the test for its test group names, then parses the CSV and prints orders, revenue, and average order value per test group.
 
-Read scope is enough to create an export. It still spends write budget on the rate limit. See the [API reference](https://docs.abconvert.io/api-reference/overview).
+Read scope is enough to create an export. It still spends write budget on the rate limit. See [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits) and the [export reference](https://docs.abconvert.io/api-reference/exports/create-an-export-job).
 
 ## Setup
 

@@ -54,7 +54,7 @@ Each token gets 60 reads per minute. A store with 12 active tests costs one list
 
 ### Rank on `difference`, not `lift`
 
-`lift` is null whenever Control's value is zero or Control and the test group sit on opposite sides of zero, so sorting on it drops the rows that moved most. Rank on `difference`, which every comparison carries ([API reference](https://docs.abconvert.io/api-reference/overview)). `vs_control` is keyed by metric:
+`lift` is null whenever Control's value is zero or Control and the test group sit on opposite sides of zero, so sorting on it drops the rows that moved most. Rank on `difference`, which every comparison carries ([results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot)). `vs_control` is keyed by metric:
 
 ```js
       summary: describeComparison(group.vs_control[metric], { metric }),

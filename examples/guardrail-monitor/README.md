@@ -9,7 +9,7 @@ Poll results on a schedule and pause a test when a guardrail metric falls too fa
 3. For every test group other than Control, compares the guardrail metric's `lift` against your threshold.
 4. Calls `POST /v1/experiments/{id}/pause` when a breach clears all three gates.
 
-Run it from your own scheduler, every few hours. The endpoint reads a stored snapshot on the recompute cadence in the [API reference](https://docs.abconvert.io/api-reference/overview), so polling faster returns the same numbers. ABConvert does not push you an alert, and webhook triggers are not available yet.
+Run it from your own scheduler, every few hours. The endpoint reads a stored snapshot on the recompute cadence in the [results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot), so polling faster returns the same numbers. ABConvert does not push you an alert, and webhook triggers are not available yet.
 
 **Read scope is enough to start.** Everything up to the pause is a read, so the `DRY_RUN=1` run below works on a read token, which is what new tokens default to. Grant write only once you let it pause for real.
 
@@ -51,7 +51,7 @@ pValue === null || pValue > MAX_P_VALUE                // could still be noise
 
 ### A null lift is not a pass
 
-`lift` is null when no percentage against Control exists; the [API reference](https://docs.abconvert.io/api-reference/overview) names both cases. The script logs the test group as `REVIEW` with its absolute `difference` and leaves it running. Read `difference` before you decide anything.
+`lift` is null when no percentage against Control exists; the [results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) names both cases. The script logs the test group as `REVIEW` with its absolute `difference` and leaves it running. Read `difference` before you decide anything.
 
 ### A sample ratio mismatch stops the check
 

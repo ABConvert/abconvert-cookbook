@@ -54,12 +54,12 @@ The snapshot identifies each row by `test_group_index` and nothing else. The lis
 
 ### `breakdown=date` adds one row per test group per day
 
-`breakdown.rows` arrives alongside the overall totals, each row carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days. To group by any other dimension, use the custom result query in the [API reference](https://docs.abconvert.io/api-reference/overview).
+`breakdown.rows` arrives alongside the overall totals, each row carrying the same fields as an overall row plus `dimension_value`. The script prints the last five days. To group by any other dimension, use the [custom result query](https://docs.abconvert.io/api-reference/results/create-a-custom-result-query).
 
 ### Money metrics are objects, and `lift` is sometimes null
 
 - `revenue_per_visitor`, `average_order_value`, `profit_per_visitor`, and `revenue` come back as `{"amount": "3.87", "currency": "USD"}`. Interpolating one prints `[object Object]`. Print `amount` as sent: these values carry more than two decimals when the measurement needs them.
-- `lift` is null when no percentage exists, and `confidence_interval` and `credible_interval` are null with it. `describeComparison` quotes the lift and its interval where there is one, and falls back to `difference` with `frequentist.difference_interval` where there is not, so a real result never prints as `n/a`. The [API reference](https://docs.abconvert.io/api-reference/overview) names the cases.
+- `lift` is null when no percentage exists, and `confidence_interval` and `credible_interval` are null with it. `describeComparison` quotes the lift and its interval where there is one, and falls back to `difference` with `frequentist.difference_interval` where there is not, so a real result never prints as `n/a`. The [results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) names the cases.
 
 ## Ask Claude
 
