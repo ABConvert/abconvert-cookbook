@@ -64,7 +64,7 @@ export ABCONVERT_API_BASE="https://api.abconvert.io/v1"   # optional, this is th
 
 ## Before you write your own client
 
-The [API overview](https://docs.abconvert.io/api-reference/overview) documents the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. One rule shapes every recipe here: the API does not send webhooks, so you run every loop. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
+The [API overview](https://docs.abconvert.io/api-reference/overview) documents the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. One rule shapes every recipe here: the API does not send webhooks yet, so you run every loop. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
 
 ## Reference
 
