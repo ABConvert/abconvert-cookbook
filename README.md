@@ -15,9 +15,25 @@ Work through the examples in order. Each one adds one API pattern to the last.
 | 3 | [`slack-report`](examples/slack-report/) | Find tests that hit day 7 or day 14, read a per-day breakdown, summarize with Claude, and post to a Slack webhook. Composes the API with other services. |
 | 4 | [`guardrail-monitor`](examples/guardrail-monitor/) | Poll every active test and pause one when a guardrail metric breaches your threshold. The only recipe that writes. Run it with `DRY_RUN=1` first. |
 
-You can also drive the API with an agent instead of a script. [`ask-claude.md`](ask-claude.md) holds prompts you can paste as written. [`skills/abconvert-public-api/`](skills/abconvert-public-api/) is a skill you drop into your own `.claude/skills/` so the agent knows the contract.
-
 Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client. It handles auth, pagination, the error envelope, rate-limit backoff, and results formatting.
+
+## Ask Claude
+
+You can also drive the API with an agent instead of a script. Install the [skill](skills/abconvert-public-api/) so the agent knows the contract, then ask in plain language:
+
+```bash
+cp -r skills/abconvert-public-api ~/.claude/skills/
+```
+
+> "Create a 10% price test on my best-selling product, 50/50 split, run for 14 days."
+
+> "Preview test 3021 and give me the preview link for each test group."
+
+> "Launch test 3021. Tell me first what launching it will change and whether any other running test conflicts with it."
+
+> "Summarize the results of test 3021 for a non-technical stakeholder. Lead with whether we should ship it."
+
+Each example's README holds prompts for its own flow. The skill makes the agent confirm before anything one-way or traffic-affecting: `start`, `end`, `archive`, and split changes on a running test. Use a script for flows that run unattended. Use the agent for open-ended questions, where you want the reasoning next to the numbers.
 
 ## Get a token
 
@@ -48,11 +64,7 @@ export ABCONVERT_API_BASE="https://api.abconvert.io/v1"   # optional, this is th
 
 ## Before you write your own client
 
-The [API overview](https://docs.abconvert.io/api-reference/overview) documents the behavior every integration hits: the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. Three rules matter in every recipe here:
-
-- **The API does not send webhooks, and you run every loop.** The API answers requests. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
-- **Results arrive as a snapshot.** [`GET /v1/experiments/{id}/results`](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) answers 202 with `Retry-After` until one is computed. That is not an error. `lib/abconvert.mjs` returns `null` for it.
-- **Money is a decimal string, and `lift` can be null.** Parse `amount` as a decimal and print it as sent. When no percentage against Control exists, read `difference` instead. The [results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot) names the cases, and `describeComparison` in the client handles both.
+The [API overview](https://docs.abconvert.io/api-reference/overview) documents the error envelope, [rate limits](https://docs.abconvert.io/api-reference/overview#rate-limits), [idempotency](https://docs.abconvert.io/api-reference/overview#idempotency), and pagination. One rule shapes every recipe here: the API does not send webhooks yet, so you run every loop. Point cron, a GitHub Action, or an agent at these scripts. The [schedule window](https://docs.abconvert.io/api-reference/experiments/set-the-schedule-window) is the only automation ABConvert runs for you.
 
 ## Reference
 
