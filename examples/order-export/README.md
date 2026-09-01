@@ -36,14 +36,6 @@ node examples/order-export/export.mjs
 | `EXPORT_POLL_MS` | no | `5000` | Delay between polls. |
 | `EXPORT_TIMEOUT_MS` | no | `600000` | Give up after 10 minutes and tell you to poll again later. |
 
-## Ask an agent
-
-> "Export the order-level data for test 3021 for the last 30 days, download it, and tell me how average order value differs between the test groups."
-
-> "Pull the order export for test 3021 for July and tell me whether the lift is coming from one product or spread across the catalog."
-
-> "Start an exposure-basis export for test 3021 for last month and tell me when it is ready."
-
 ## Common mistakes
 
 - **Saving the download URL for later.** The URL is signed and expires after 7 days. After `expires_at` the job still reads `completed` with `url` null, so check `url`, not `status`.

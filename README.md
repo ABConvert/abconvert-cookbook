@@ -6,11 +6,9 @@ ABConvert runs A/B tests on Shopify stores: price, shipping, theme, template, UR
 
 ## Start here
 
-Work through the examples in order. Each one adds one API pattern to the last.
-
 | | Example | What you learn |
 |---|---|---|
-| 1 | [`portfolio-dashboard`](examples/portfolio-dashboard/) | Read every store you hold a token for with `?include=results_summary` and write one HTML and Markdown dashboard. |
+| 1 | [`portfolio-dashboard`](examples/portfolio-dashboard/) | Read every store you hold a token for with `?include=results_summary` and create one HTML and Markdown dashboard. |
 | 2 | [`order-export`](examples/order-export/) | Start an async order export, poll the job, download the CSV, and analyze it locally. |
 | 3 | [`slack-report`](examples/slack-report/) | Find tests that hit day 7 or day 14, read a per-day breakdown, summarize with Claude, and post to a Slack webhook. |
 | 4 | [`guardrail-monitor`](examples/guardrail-monitor/) | Poll every active test and pause one when a guardrail metric breaches your threshold. |
@@ -19,11 +17,14 @@ Every script imports [`lib/abconvert.mjs`](lib/abconvert.mjs), the shared client
 
 ## Ask an agent
 
-You can also drive the API with an agent instead of a script. The hosted [MCP server](https://docs.abconvert.io/mcp/overview) is the fastest way to connect one. The [skill](skills/abconvert-public-api/) teaches an agent the REST API itself, the same endpoints these examples use. Copy it into your agent's skill directory:
+You can also drive the API with an agent instead of a script. The hosted [MCP server](https://docs.abconvert.io/mcp/overview) is the fastest way to connect one. The [skill](skills/abconvert-public-api/) teaches an agent the REST API itself, the same endpoints these examples use. It works in Claude Code, Codex, and Cursor:
 
 ```bash
+# Claude Code
 cp -r skills/abconvert-public-api ~/.claude/skills/
 ```
+
+In Codex or Cursor, point the agent at [`SKILL.md`](skills/abconvert-public-api/SKILL.md) instead.
 
 Then ask in plain language:
 
@@ -35,12 +36,15 @@ Then ask in plain language:
 
 > "Summarize the results of test 3021 for a non-technical stakeholder. Lead with whether we should ship it."
 
-Each example's README holds prompts for its own flow. Use a script for flows that run unattended. Use an agent for open-ended questions, where you want the reasoning next to the numbers.
+> [!TIP]
+> Connect your agent to Shopify's MCP server as well. A prompt like "my best-selling product" needs store data the ABConvert API does not hold. With Shopify connected, the agent resolves product names and sales rank into the product and product variant IDs the API takes.
+
+Use a script for flows that run unattended. Use an agent for open-ended questions, where you want the reasoning next to the numbers.
 
 ## Get a token
 
 1. Open the ABConvert admin.
-2. Go to **Settings > Integrations**.
+2. Go to **Settings > MCP & API Access**.
 3. Create a token and copy it. The plaintext is shown once.
 
 A token reaches exactly one shop. New tokens default to read scope, which runs examples 1 to 3. Only the guardrail monitor needs write scope, to pause a test. [Authentication](https://docs.abconvert.io/api-reference/authentication) covers scopes. Treat a token like a password: keep it in your secret manager, never in client-side code or a repository.
