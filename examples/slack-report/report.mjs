@@ -53,6 +53,10 @@ function daysRunning(startedAt, now = Date.now()) {
  * The list endpoint filters on `created_at`, not `started_at`, so pick the day
  * mark here. A test created weeks before it launched would slip through a
  * created_at filter.
+ *
+ * `daysRunning` floors whole days: a test that started at 16:20 is not at
+ * day 7 until 16:20 seven days later. A run that gets skipped skips that
+ * day's report with it.
  */
 function atDayMark(experiment, now) {
   const days = daysRunning(experiment.started_at, now);
