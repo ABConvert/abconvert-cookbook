@@ -36,7 +36,7 @@ node examples/order-export/export.mjs
 | `EXPORT_POLL_MS` | no | `5000` | Delay between polls. |
 | `EXPORT_TIMEOUT_MS` | no | `600000` | Give up after 10 minutes and tell you to poll again later. |
 
-## Ask Claude
+## Ask an agent
 
 > "Export the order-level data for test 3021 for the last 30 days, download it, and tell me how average order value differs between the test groups."
 

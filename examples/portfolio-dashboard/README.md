@@ -42,7 +42,7 @@ The label is yours. It appears in the dashboard and in the logs, where the scrip
 - **Result** shows the platform's `outcome`, or `SRM mismatch` when `srm_status` is `mismatch`. Treat a mismatch as invalidating the outcome.
 - **Best test group** is the non-control test group whose `difference` on the test's `primary_metric` is largest. It is quoted with its interval: `Variant A +71.6% (+19.9% to +123.3%)`. An interval that spans zero is not a result yet. When a run did not read a test's snapshot, the row says `snapshot not read` instead of going blank.
 
-## Ask Claude
+## Ask an agent
 
 > "Build me a table of every test running across all my stores, sorted by how long it has been running."
 
