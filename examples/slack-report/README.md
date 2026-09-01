@@ -35,16 +35,6 @@ node examples/slack-report/report.mjs
 
 Start with `DRY_RUN=1 SKIP_LLM=1` to see exactly what the API returned before you wire in either service.
 
-## Ask an agent
-
-Instead of scheduling the script, hand an agent the skill in [`skills/abconvert-public-api/`](../../skills/abconvert-public-api/) and ask:
-
-> "Summarize the results of every test that hit day 7 or day 14 today, and post it to my Slack channel."
-
-> "Show me the day-by-day breakdown for test 3021 and tell me whether the lift is stable or still moving."
-
-> "Check test 3021 for a sample ratio mismatch and tell me whether the results are trustworthy."
-
 ## Common mistakes
 
 - **Polling results on a tight loop.** The endpoint reads a stored snapshot and computes nothing. Reading it every minute burns your 60 reads per minute and returns the same `computed_at`.

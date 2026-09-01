@@ -39,7 +39,7 @@ Then ask in plain language:
 > [!TIP]
 > Connect your agent to Shopify's MCP server as well. A prompt like "my best-selling product" needs store data the ABConvert API does not hold. With Shopify connected, the agent resolves product names and sales rank into the product and product variant IDs the API takes.
 
-Each example's README holds prompts for its own flow. Use a script for flows that run unattended. Use an agent for open-ended questions, where you want the reasoning next to the numbers.
+Use a script for flows that run unattended. Use an agent for open-ended questions, where you want the reasoning next to the numbers.
 
 ## Get a token
 

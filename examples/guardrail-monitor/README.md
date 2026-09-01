@@ -44,14 +44,6 @@ DRY_RUN=1 node examples/guardrail-monitor/monitor.mjs
 
 Run it with `DRY_RUN=1` for a week before you let it pause anything. You are looking for the threshold that fires on a real problem and stays quiet the rest of the time.
 
-## Ask an agent
-
-> "Pause every active price test on this store and tell me which ones you paused."
-
-> "Check all my active tests against a 10% conversion rate guardrail and tell me which ones you would pause and why."
-
-> "Test 3021 got paused by my guardrail overnight. Tell me what the numbers looked like and whether resuming it is reasonable."
-
 ## Common mistakes
 
 - **Firing on lift alone.** Without a sample floor and a significance gate, the monitor pauses winners that started slowly.

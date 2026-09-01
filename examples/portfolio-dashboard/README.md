@@ -42,14 +42,6 @@ The label is yours. It appears in the dashboard and in the logs, where the scrip
 - **Result** shows the platform's `outcome`, or `SRM mismatch` when `srm_status` is `mismatch`. Treat a mismatch as invalidating the outcome.
 - **Best test group** is the non-control test group whose `difference` on the test's `primary_metric` is largest. It is quoted with its interval: `Variant A +71.6% (+19.9% to +123.3%)`. An interval that spans zero is not a result yet. When a run did not read a test's snapshot, the row says `snapshot not read` instead of going blank.
 
-## Ask an agent
-
-> "Build me a table of every test running across all my stores, sorted by how long it has been running."
-
-> "Across all my active tests, which one has the highest probability of beating Control on revenue per visitor?"
-
-> "List every test that has been running longer than 21 days and tell me which ones have enough traffic to call."
-
 ## Common mistakes
 
 - **Expecting one token to see several stores.** It cannot. Collect one token per store. 30 stores means 30 tokens and 30 passes.
