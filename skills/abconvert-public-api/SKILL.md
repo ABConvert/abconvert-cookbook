@@ -17,7 +17,7 @@ The full contract is the API reference at https://docs.abconvert.io/api-referenc
 
 If any input is missing, stop and ask. Do not guess a base URL, and do not try to mint a token.
 
-To get a token: ABConvert admin, **Settings > Integrations**, then create. The plaintext is shown once.
+To get a token: ABConvert admin, **Settings > MCP & API Access**, then create. The plaintext is shown once.
 
 ## Scopes and account state
 
