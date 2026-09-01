@@ -44,7 +44,7 @@ DRY_RUN=1 node examples/guardrail-monitor/monitor.mjs
 
 Run it with `DRY_RUN=1` for a week before you let it pause anything. You are looking for the threshold that fires on a real problem and stays quiet the rest of the time.
 
-## Ask Claude
+## Ask an agent
 
 > "Pause every active price test on this store and tell me which ones you paused."
 

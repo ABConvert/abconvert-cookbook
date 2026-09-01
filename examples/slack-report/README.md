@@ -35,7 +35,7 @@ node examples/slack-report/report.mjs
 
 Start with `DRY_RUN=1 SKIP_LLM=1` to see exactly what the API returned before you wire in either service.
 
-## Ask Claude
+## Ask an agent
 
 Instead of scheduling the script, hand an agent the skill in [`skills/abconvert-public-api/`](../../skills/abconvert-public-api/) and ask:
 
