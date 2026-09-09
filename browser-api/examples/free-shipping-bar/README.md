@@ -4,6 +4,8 @@
 
 Script: [`free-shipping-bar.js`](free-shipping-bar.js)
 
+![A green bar across the top of a storefront reading Spend $49.20 more for free shipping](screenshot.png)
+
 ## Markup
 
 ```html

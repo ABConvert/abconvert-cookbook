@@ -4,6 +4,8 @@ Announce the visitor's offer, with progress toward the next volume tier.
 
 Script: [`offer-banner.js`](offer-banner.js)
 
+![A dark bar across the bottom of a storefront reading 30% off](screenshot.png)
+
 ## Markup
 
 ```html

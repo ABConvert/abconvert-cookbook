@@ -4,6 +4,8 @@ Theme JavaScript that reads `window.ABConvert`, the object ABConvert publishes o
 
 `window.ABConvert` tells your code which test groups the visitor is in, and the price, shipping rates, and offer that visitor gets. It is read-only: to create or manage tests, use the [public API](../public-api/). The contract lives in the [Browser API reference](https://docs.abconvert.io/api-reference/browser-api). The examples here show how to use it.
 
+![A storefront product page with the three render examples: a free shipping bar above the header, a custom price block under the product's price, and an offer banner fixed to the bottom](storefront-overview.png)
+
 ## Start here
 
 | | Example | What you learn |
