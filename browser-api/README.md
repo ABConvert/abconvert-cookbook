@@ -46,6 +46,26 @@ The mock is for development only. On a store, the ABConvert app embed publishes 
 
 Order does not matter. Each script pushes its work onto `window.ABConvertQueue`, which runs it once ABConvert is ready, whether the script loaded before or after the app embed.
 
+## Or run one from a visual editor test
+
+You do not have to touch the theme. A [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test) carries custom JavaScript per test group, so the script runs only for the visitors in that group and you end it from the ABConvert admin.
+
+Two differences from a theme script:
+
+- **Add the code to a variant.** The Control group cannot carry custom code.
+- **Custom JavaScript runs before the page has a `<body>`.** Create any elements your script renders into inside the `window.ABConvertQueue` callback. The queue runs callbacks in the order you push them, so a callback that builds the markup and is pushed first runs before the example's own:
+
+  ```js
+  window.ABConvertQueue = window.ABConvertQueue || [];
+  window.ABConvertQueue.push(function () {
+    var bar = document.createElement('div');
+    bar.className = 'shipping-bar';
+    bar.hidden = true;
+    document.body.prepend(bar);
+  });
+  // then the example script, which pushes its own callback
+  ```
+
 ## QA a test group
 
 Append `?abconvert_force=EXPERIMENT_ID:INDEX` to any storefront URL to see one test group, or run `ABConvert.forceTestGroup('EXPERIMENT_ID', INDEX)` in the console and reload. Forced visits are excluded from results. The [reference](https://docs.abconvert.io/api-reference/browser-api#force-a-test-group) has the details.
