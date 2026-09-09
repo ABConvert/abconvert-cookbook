@@ -19,7 +19,7 @@ Run it once a day from your own scheduler: a cron entry, an n8n schedule trigger
 export ABCONVERT_API_TOKEN="abcv_live_..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
-node examples/slack-report/report.mjs
+node public-api/examples/slack-report/report.mjs
 ```
 
 | Variable | Required | Default | Purpose |

@@ -19,7 +19,7 @@ A revoked token, a shop with API access turned off, or a single test that 404s b
 
 ```bash
 export ABCONVERT_API_TOKENS="northwind=abcv_live_aaa,acme=abcv_live_bbb"
-node examples/portfolio-dashboard/dashboard.mjs
+node public-api/examples/portfolio-dashboard/dashboard.mjs
 open out/portfolio.html
 ```
 

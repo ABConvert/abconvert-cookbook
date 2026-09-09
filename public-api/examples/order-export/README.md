@@ -20,7 +20,7 @@ Read scope is enough to create an export. It still spends write budget on the ra
 ```bash
 export ABCONVERT_API_TOKEN="abcv_live_..."     # read scope is enough
 export EXPORT_EXPERIMENT_ID="3021"
-node examples/order-export/export.mjs
+node public-api/examples/order-export/export.mjs
 ```
 
 | Variable | Required | Default | Purpose |

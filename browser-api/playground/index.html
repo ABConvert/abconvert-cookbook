@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABConvert Browser API playground</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; margin: 0 auto; max-width: 720px; padding: 24px; color: #1a1a1a; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 17px; margin-top: 32px; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-top: 12px; }
+    .shipping-bar, .offer-banner { background: #f2f7ec; border-radius: 6px; padding: 10px 12px; }
+    .product { display: flex; justify-content: space-between; padding: 6px 0; }
+    .custom-price__compare-at { color: #888; }
+    pre { background: #f6f6f6; padding: 10px; overflow: auto; font-size: 13px; }
+    button { font: inherit; padding: 6px 12px; }
+    small { color: #666; }
+  </style>
+  <!-- On a real store the app embed publishes window.ABConvert. Here, mocks. -->
+  <script src="storefront-mock.js"></script>
+  <script src="abconvert-mock.js"></script>
+</head>
+<body>
+  <h1>ABConvert Browser API playground</h1>
+  <p>
+    Every example script runs against a fake <code>window.ABConvert</code>. Switch test groups the two ways that
+    work on a store: the URL parameter, one test per visit
+    (<a href="?abconvert_force=49603:0">price test to Control</a>,
+    <a href="?abconvert_force=49603:1">price test to Variant A</a>), or the console method for several at once:
+    <button type="button" onclick="forceAll(0)">Control everywhere</button>
+    <button type="button" onclick="forceAll(1)">Variant A everywhere</button>
+    <button type="button" onclick="clearAll()">Clear forces</button>
+    <br><small>A forced test group is kept for this tab until you clear it or close the tab.</small>
+  </p>
+
+  <h2>Assignments sent to the data platform</h2>
+  <section>
+    <p><small><code>window.dataLayer</code> after <code>examples/data-platform</code> ran. Reload the tab: nothing is sent twice in one session.</small></p>
+    <pre id="data-layer-output">(waiting)</pre>
+  </section>
+
+  <h2>Free shipping bar</h2>
+  <section>
+    <div class="shipping-bar" data-zone="United States" hidden></div>
+    <p>
+      <button type="button" onclick="playgroundCart.add()">Add an item ($49)</button>
+      <button type="button" onclick="playgroundCart.remove()">Remove an item</button>
+      <small>Cart: <span id="cart-summary"></span></small>
+    </p>
+  </section>
+
+  <h2>Custom price elements</h2>
+  <section>
+    <div class="product"><span>Arc Performance Reformer, Standard</span>
+      <span class="custom-price" data-variant-id="39586780971072">$60.00</span></div>
+    <div class="product"><span>Arc Performance Reformer, Deluxe</span>
+      <span class="custom-price" data-variant-id="39586780971073">$80.00</span></div>
+    <div class="product"><span>Collection card</span>
+      <span class="custom-price" data-product-id="6654464491584">From $60.00</span></div>
+    <div class="product"><span>A product no test covers (theme price stays)</span>
+      <span class="custom-price" data-variant-id="1">$25.00</span></div>
+  </section>
+
+  <h2>Offer banner</h2>
+  <section>
+    <div class="offer-banner" hidden>
+      <strong class="offer-banner__title"></strong>
+      <span class="offer-banner__progress"></span>
+    </div>
+    <p><small>Uses the cart buttons above.</small></p>
+  </section>
+
+  <!-- The examples, exactly as you would add them to a theme. -->
+  <script src="../examples/data-platform/assignments-to-data-platform.js"></script>
+  <script src="../examples/free-shipping-bar/free-shipping-bar.js"></script>
+  <script src="../examples/custom-price/custom-price.js"></script>
+  <script src="../examples/offer-banner/offer-banner.js"></script>
+
+  <!-- Playground wiring only. -->
+  <script>
+    var TEST_IDS = ['49603', '50112', '50340'];
+    function forceAll(index) {
+      TEST_IDS.forEach(function (id) { ABConvert.forceTestGroup(id, index); });
+      location.href = location.pathname;   // a force applies from the next page load
+    }
+    function clearAll() {
+      TEST_IDS.forEach(function (id) { ABConvert.clearForcedTestGroup(id); });
+      location.href = location.pathname;
+    }
+    function showCart() {
+      var cart = playgroundCart.read();
+      document.getElementById('cart-summary').textContent =
+        cart.item_count + ' item(s), $' + (cart.items_subtotal_price / 100).toFixed(2);
+    }
+    document.addEventListener('shopify:cart:lines-update', function (event) { event.promise.then(showCart); });
+    window.addEventListener('abconvert:ready', function () {
+      showCart();
+      document.getElementById('data-layer-output').textContent =
+        JSON.stringify(window.dataLayer || [], null, 2) + (window.dataLayer && window.dataLayer.length ? '' : '\n(already sent this session, or nothing to send)');
+    });
+  </script>
+</body>
+</html>
