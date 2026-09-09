@@ -2,9 +2,13 @@
  * "Spend $X more for free shipping" bar that follows the visitor's shipping
  * test group.
  *
- * Markup, anywhere on the page:
+ * Markup, anywhere on the page. The inner elements are optional: with only the
+ * outer div, the text goes straight into it.
  *
- *   <div class="shipping-bar" hidden></div>
+ *   <div class="shipping-bar" hidden>
+ *     <span class="shipping-bar__text"></span>
+ *     <span class="shipping-bar__track"></span>
+ *   </div>
  *
  * On a test with more than one shipping zone, say which zone the bar is for:
  *
@@ -52,7 +56,12 @@
       : 'You have free shipping';
     // Write only when the text changed. ABConvert watches the page, and a
     // rewrite of an unchanged element would trigger it, then this, in a loop.
-    if (bar.textContent !== text) bar.textContent = text;
+    var label = bar.querySelector('.shipping-bar__text') || bar;
+    if (label.textContent !== text) label.textContent = text;
+    // How far along the visitor is, for a progress track drawn in CSS:
+    // .shipping-bar__track::after { width: var(--shipping-progress) }
+    var progress = Math.min(100, Math.round((subtotal / threshold.amount) * 100)) + '%';
+    if (bar.style.getPropertyValue('--shipping-progress') !== progress) bar.style.setProperty('--shipping-progress', progress);
     bar.hidden = false;
   }
 

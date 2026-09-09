@@ -4,12 +4,22 @@
 
 Script: [`free-shipping-bar.js`](free-shipping-bar.js)
 
-![A green bar across the top of a storefront reading Spend $49.20 more for free shipping](screenshot.png)
+<img src="screenshot.png" width="390" alt="A pale green bar across the top of a mobile storefront reading Spend $49.20 more for free shipping, with a progress track under it">
 
 ## Markup
 
 ```html
-<div class="shipping-bar" hidden></div>
+<div class="shipping-bar" hidden>
+  <span class="shipping-bar__text"></span>
+  <span class="shipping-bar__track"></span>
+</div>
+```
+
+The inner elements are optional. With only the outer `div`, the text goes straight into it. The script sets `--shipping-progress` on the bar, the share of the threshold the cart has reached, so a track can be drawn in CSS:
+
+```css
+.shipping-bar__track { display: block; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, .12); overflow: hidden; }
+.shipping-bar__track::after { content: ''; display: block; height: 100%; width: var(--shipping-progress, 0%); background: #7ba44b; }
 ```
 
 On a test with more than one shipping zone, name the zone the bar is for. Shopify picks the zone at checkout from the shipping address, so the browser does not know it:
@@ -22,7 +32,7 @@ On a test with more than one shipping zone, name the zone the bar is for. Shopif
 
 1. Reads `getFreeShippingThreshold()` for the visitor's test group.
 2. Reads the cart subtotal from Shopify's Ajax API, `GET /cart.js`.
-3. Renders the remaining amount, or "You have free shipping".
+3. Renders the remaining amount, or "You have free shipping", and sets `--shipping-progress` for the track.
 4. Hides the bar when there is nothing true to show: the visitor is not in a shipping test, the test group has no free rate, the zone is unknown, or the cart is priced in a different currency from the rate.
 5. Re-renders on `shopify:cart:lines-update`, and on Dawn's `cart-update` for themes that update the cart without dispatching Shopify's event.
 
