@@ -4,7 +4,7 @@
 
 Script: [`free-shipping-bar.js`](free-shipping-bar.js)
 
-<img src="screenshot.png" width="390" alt="A pale green bar across the top of a mobile storefront reading Spend $49.20 more for free shipping, with a progress track under it">
+<img src="screenshot.png" width="390" alt="A pale green bar above a mobile storefront header reading Spend $51.00 more for free shipping, with a progress track under it">
 
 ## Markup
 

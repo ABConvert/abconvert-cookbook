@@ -6,7 +6,7 @@ Script: [`custom-price.js`](custom-price.js)
 
 ABConvert rewrites the price elements your theme renders on product, collection, and cart pages. A promo block, a bundle builder, a quick-view card, or a collection card you render yourself can fall outside that. This script covers those.
 
-<img src="screenshot.png" width="390" alt="Product page detail: the theme's price reads $30.80, and a card below it titled Bundle and save lists Ski wax $30.80 and Wax applicator $6.00">
+<img src="screenshot.png" width="390" alt="Product page detail: a card titled Add the wax kit lists Special ski wax $62.70 and Wax applicator $6.00">
 
 ## Markup
 
