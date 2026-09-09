@@ -6,7 +6,7 @@ Theme JavaScript that reads `window.ABConvert`, the object ABConvert publishes o
 
 <img src="storefront-overview.png" width="390" alt="A mobile product page with three elements outlined in green and numbered: 1 a free shipping bar with a progress track pinned above the header, 2 a bundle card under the product price, 3 an offer card fixed to the bottom">
 
-Outlined and numbered: **1** the free shipping bar, **2** the bundle card, **3** the offer card. The rest of the page is the theme's own.
+Outlined and numbered: **1** the free shipping bar, **2** the bundle card, **3** the offer card. The dimmed parts are the theme's own.
 
 ## Start here
 
