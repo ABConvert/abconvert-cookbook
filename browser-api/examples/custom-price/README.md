@@ -6,22 +6,34 @@ Script: [`custom-price.js`](custom-price.js)
 
 ABConvert rewrites the price elements your theme renders on product, collection, and cart pages. A promo block, a bundle builder, a quick-view card, or a collection card you render yourself can fall outside that. This script covers those.
 
-<img src="screenshot.png" width="390" alt="Product page detail: a card titled Add the wax kit lists Special ski wax $62.70 and Wax applicator $6.00">
+<img src="screenshot.png" width="390" alt="Product page detail: a card titled Add the wax kit lists Special ski wax at $62.70, written by the script, and Wax applicator at $6.00">
+
+The bundle block in that screenshot is the markup below. The visitor's test group prices the wax at $62.70; a visitor outside the test keeps the $57.00 the theme rendered.
 
 ## Markup
 
-Keep the theme's price in the element. It stays for visitors who are not in a test.
+Keep the theme's price inside the element. It stays for visitors who are not in a test.
 
-One product variant:
+One product variant, as in the bundle block above:
 
 ```html
-<span class="custom-price" data-variant-id="39586780971072">$60.00</span>
+<div class="bundle">
+  <h3>Add the wax kit</h3>
+  <div class="bundle__row">
+    <span>Special ski wax</span>
+    <span class="custom-price" data-variant-id="47522361606401">$57.00</span>
+  </div>
+  <div class="bundle__row">
+    <span>Wax applicator</span>
+    <span>$6.00</span>
+  </div>
+</div>
 ```
 
 A product's lowest price, for "From $X" cards:
 
 ```html
-<span class="custom-price" data-product-id="6654464491584">From $60.00</span>
+<span class="custom-price" data-product-id="6654464491584">From $600.00</span>
 ```
 
 ## What it does
