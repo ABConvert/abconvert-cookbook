@@ -28,8 +28,8 @@
         exp_variant_string: 'abconvert-' + assignment.experimentId + '-' + assignment.testGroup.index,
         experiment_id: assignment.experimentId,
         experiment_name: assignment.experimentName,
-        variation_id: String(assignment.testGroup.index),
-        variation_name: assignment.testGroup.name,
+        variant_id: String(assignment.testGroup.index),
+        variant_name: assignment.testGroup.name,
       });
     },
 
@@ -41,7 +41,7 @@
         $feature_flag: 'abconvert-' + assignment.experimentId,
         $feature_flag_response: String(assignment.testGroup.index),
         experiment_name: assignment.experimentName,
-        variation_name: assignment.testGroup.name,
+        variant_name: assignment.testGroup.name,
       });
     },
 

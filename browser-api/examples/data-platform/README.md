@@ -23,7 +23,7 @@ Set `DESTINATION` at the top of the script to one of the keys in `DESTINATIONS`:
 
 | Destination | Sends |
 |---|---|
-| `dataLayer` | `experience_impression` with `exp_variant_string`, `experiment_id`, `experiment_name`, `variation_id`, `variation_name` |
+| `dataLayer` | `experience_impression` with `exp_variant_string`, `experiment_id`, `experiment_name`, `variant_id`, `variant_name` |
 | `posthog` | `$feature_flag_called` with `$feature_flag` and `$feature_flag_response` |
 | `mixpanel` | `$experiment_started` with `Experiment name` and `Variant name` |
 

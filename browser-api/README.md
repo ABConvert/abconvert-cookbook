@@ -2,7 +2,7 @@
 
 Theme JavaScript that reads `window.ABConvert`, the object ABConvert publishes on every storefront page. Each example is one directory, one README, and one script you can add to a theme as it is.
 
-`window.ABConvert` tells your code which test groups the visitor is in, and the price, shipping rates, and offer that visitor gets. It is read-only: to create or manage tests, use the [public API](../public-api/). The contract lives in the [Browser API reference](https://docs.abconvert.io/api-reference/browser-api). The examples here show how to use it.
+`window.ABConvert` tells your code which test groups the visitor is in, and the price, shipping rates, and offer that visitor gets. It is read-only: to create or manage tests, use the [public API](../public-api/). The contract lives in the [Browser API reference](https://docs.abconvert.io/api-reference/browser-api), and the same examples are walked through on [Browser API examples](https://docs.abconvert.io/api-reference/browser-api-examples). The versions here are the full ones.
 
 <img src="storefront-overview.png" width="390" alt="A mobile product page with three elements outlined in green and numbered: 1 a free shipping bar with a progress track pinned above the header, 2 a bundle card under the product price, 3 an offer card fixed to the bottom">
 
@@ -17,7 +17,7 @@ Outlined and numbered: **1** the free shipping bar, **2** the bundle card, **3**
 | 3 | [`custom-price`](examples/custom-price/) | Rewrite price elements ABConvert does not reach, per product variant or per product, and keep them right as the page changes. |
 | 4 | [`offer-banner`](examples/offer-banner/) | Render the visitor's offer and how many more items unlock the next volume tier. |
 
-Every example follows the three rules from the reference's [common mistakes](https://docs.abconvert.io/api-reference/browser-api#common-mistakes): wait on `window.ABConvertQueue` rather than polling, treat `null` as "leave the theme alone", and compare before you write.
+Every example follows the same three habits, which avoid the reference's [common mistakes](https://docs.abconvert.io/api-reference/browser-api#common-mistakes): wait on `window.ABConvertQueue` rather than polling, treat `null` as "leave the theme alone", and compare before you write.
 
 ## Try them without a store
 
@@ -48,7 +48,7 @@ Order does not matter. Each script pushes its work onto `window.ABConvertQueue`,
 
 ## Or run one from a visual editor test
 
-You do not have to touch the theme. A [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test) carries custom JavaScript per test group, so the script runs only for the visitors in that group and you end it from the ABConvert admin.
+You do not have to touch the theme. A [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) carries custom JavaScript per test group, so the script runs only for visitors in that test group and you end it from the ABConvert admin. Add the code to a test group other than Control, which cannot carry custom code, and build any elements your script renders into inside the `window.ABConvertQueue` callback, because custom JavaScript runs before the page has a `<body>`.
 
 Two differences from a theme script:
 

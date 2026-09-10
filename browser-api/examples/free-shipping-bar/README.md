@@ -1,6 +1,6 @@
 # Free shipping progress bar
 
-"Spend $25.00 more for free shipping", using the threshold of the visitor's shipping test group.
+"Spend $51.00 more for free shipping", using the threshold of the visitor's shipping test group.
 
 Script: [`free-shipping-bar.js`](free-shipping-bar.js)
 
