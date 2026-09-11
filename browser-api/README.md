@@ -16,6 +16,7 @@ Outlined and numbered: **1** the free shipping bar, **2** the bundle card, **3**
 | 2 | [`free-shipping-bar`](examples/free-shipping-bar/) | Read the free shipping threshold for the visitor's test group, compare it with the cart, and re-render when the cart changes. |
 | 3 | [`custom-price`](examples/custom-price/) | Rewrite price elements ABConvert does not reach, per product variant or per product, and keep them right as the page changes. |
 | 4 | [`offer-banner`](examples/offer-banner/) | Render the visitor's offer and how many more items unlock the next volume tier. |
+| 5 | [`visual-editor`](examples/visual-editor/) | Run the bar, a bundle block, and the banner from a visual editor test's custom JavaScript, with no theme edit. |
 
 Every example follows the same three habits, which avoid the reference's [common mistakes](https://docs.abconvert.io/api-reference/browser-api#common-mistakes): wait on `window.ABConvertQueue` rather than polling, treat `null` as "leave the theme alone", and compare before you write.
 
@@ -48,11 +49,11 @@ Order does not matter. Each script pushes its work onto `window.ABConvertQueue`,
 
 ## Or run one from a visual editor test
 
-You do not have to touch the theme. A [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) carries custom JavaScript per test group, so the script runs only for visitors in that test group and you end it from the ABConvert admin. Add the code to a test group other than Control, which cannot carry custom code, and build any elements your script renders into inside the `window.ABConvertQueue` callback, because custom JavaScript runs before the page has a `<body>`.
+You do not have to touch the theme. A [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) carries custom JavaScript per test group, so the script runs only for visitors in that test group and you end it from the ABConvert admin. The [`visual-editor`](examples/visual-editor/) example is all three components run this way, verified on a live storefront.
 
-Two differences from a theme script:
+Two rules differ from a theme script:
 
-- **Add the code to a variant.** The Control group cannot carry custom code.
+- **Add the code to a test group other than Control.** Control cannot carry custom code.
 - **Custom JavaScript runs before the page has a `<body>`.** Create any elements your script renders into inside the `window.ABConvertQueue` callback. The queue runs callbacks in the order you push them, so a callback that builds the markup and is pushed first runs before the example's own:
 
   ```js
@@ -68,7 +69,7 @@ Two differences from a theme script:
 
 ## QA a test group
 
-Append `?abconvert_force=EXPERIMENT_ID:INDEX` to any storefront URL to see one test group, or run `ABConvert.forceTestGroup('EXPERIMENT_ID', INDEX)` in the console and reload. Forced visits are excluded from results. The [reference](https://docs.abconvert.io/api-reference/browser-api#force-a-test-group) has the details.
+Append `?abconvert_force=EXPERIMENT_ID:INDEX` to any storefront URL to see one test group, or `?abconvert_force=INDEX` to force that index in every test on the page at once. Or run `ABConvert.forceTestGroup('EXPERIMENT_ID', INDEX)` in the console and reload. Forced visits are excluded from results. On a password-protected store, enter the password first: the password page drops the query string. The [reference](https://docs.abconvert.io/api-reference/browser-api#force-a-test-group) has the details.
 
 ## Ask an agent
 

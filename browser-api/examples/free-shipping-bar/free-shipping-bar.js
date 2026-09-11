@@ -65,22 +65,52 @@
     bar.hidden = false;
   }
 
+  var pending = null;
   function rerender() {
-    if (window.ABConvert) render(window.ABConvert);
+    // Several of the signals below can land for one cart change; collapse them.
+    clearTimeout(pending);
+    pending = setTimeout(function () {
+      if (window.ABConvert) render(window.ABConvert).catch(function () { /* leave the last render */ });
+    }, 120);
   }
 
-  // Shopify's Storefront Events API fires this when a cart update starts.
-  // `event.promise` settles once the cart has changed.
+  // Themes differ in what they emit when the cart changes, so watch all three.
+
+  // 1. Shopify's Storefront Events API. Guaranteed only when something calls
+  //    Shopify.actions.updateCart; a theme that posts to /cart/add.js itself,
+  //    as Dawn does, never fires it. `event.promise` settles once the cart changed.
   document.addEventListener('shopify:cart:lines-update', function (event) {
     (event.promise || Promise.resolve()).then(rerender);
   });
 
-  // Themes that post to /cart/add.js themselves do not fire the event above.
-  // Dawn publishes 'cart-update' through its pubsub helper instead.
-  if (typeof window.subscribe === 'function') {
-    window.subscribe('cart-update', rerender);
+  // 2. The cart write itself. The one signal every theme produces. The theme
+  //    gets its own promise back untouched; this only watches from the side.
+  var CART_WRITE = /\/cart\/(add|change|update|clear)(\.js)?($|\?)/;
+  var nativeFetch = window.fetch;
+  if (typeof nativeFetch === 'function') {
+    window.fetch = function (input) {
+      var url = (input && input.url) || input;
+      var result = nativeFetch.apply(this, arguments);
+      if (typeof url === 'string' && CART_WRITE.test(url)) result.then(rerender, function () {});
+      return result;
+    };
   }
+  var nativeOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (method, url) {
+    if (typeof url === 'string' && CART_WRITE.test(url)) this.addEventListener('load', rerender);
+    return nativeOpen.apply(this, arguments);
+  };
 
   window.ABConvertQueue = window.ABConvertQueue || [];
-  window.ABConvertQueue.push(render);
+  window.ABConvertQueue.push(function (ABConvert) {
+    // 3. The theme's own pubsub. Dawn publishes 'cart-update' through its
+    //    subscribe helper, but only defines it once its scripts have run, so
+    //    look for it here, after the page has parsed, not at load time.
+    if (typeof window.subscribe === 'function') {
+      try { window.subscribe('cart-update', rerender); } catch (e) { /* theme-specific */ }
+    }
+    // `render` is async. The queue catches a thrown error, not a rejected
+    // promise, so an async callback catches its own.
+    render(ABConvert).catch(function () { /* leave the markup as the theme rendered it */ });
+  });
 })();

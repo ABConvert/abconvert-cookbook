@@ -20,7 +20,7 @@ Script: [`offer-banner.js`](offer-banner.js)
 1. Reads `getOffers()`. An empty list hides the banner; that is what Control with no offer sees.
 2. Shows the first offer's title.
 3. For a volume discount, reads the cart's item count from `GET /cart.js`, finds the tier the visitor has reached and the next one, and renders "You save 10%. Add 2 more items to save 20%", the wording the [docs example](https://docs.abconvert.io/api-reference/browser-api-examples#render-an-offer-banner) shows.
-4. Re-renders when the cart changes.
+4. Re-renders when the cart changes, watching the same three signals as the [free shipping bar](../free-shipping-bar/#watching-the-cart).
 
 ABConvert does not compute tier progress. `getOffers()` returns the offer's definition, in the same shape as the [public API's offer](https://docs.abconvert.io/api-reference/experiments/create-a-test), and the cart is yours to read.
 
