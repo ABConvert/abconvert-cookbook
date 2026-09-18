@@ -1,9 +1,9 @@
 ---
-name: abconvert-public-api
-description: Manage ABConvert tests through the public REST API (/v1) - create, preview, launch, pause, end, and read results - and analyze the results. Use when the user wants to drive tests via the API, demo the public API, or asks to create/launch/analyze a test programmatically instead of through the ABConvert admin.
+name: abconvert-rest-api
+description: Manage ABConvert tests through the REST API (/v1) - create, preview, launch, pause, end, and read results - and analyze the results. Use when the user wants to drive tests via the API, demo the REST API, or asks to create/launch/analyze a test programmatically instead of through the ABConvert admin.
 ---
 
-# ABConvert Public API
+# ABConvert REST API
 
 Drive A/B tests on a Shopify store over REST: create a draft, preview it, launch it, read its results.
 

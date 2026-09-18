@@ -1,5 +1,5 @@
 /**
- * Minimal ABConvert Public API client.
+ * Minimal ABConvert REST API client.
  *
  * Node 20+, no dependencies, `fetch` only. Every example in this repo imports
  * this file, so the error envelope, pagination, and rate-limit handling are
