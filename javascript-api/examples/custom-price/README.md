@@ -8,13 +8,13 @@ ABConvert rewrites the price elements your theme renders on product, collection,
 
 <img src="screenshot.png" width="390" alt="Product page detail: a card titled Add the wax kit lists Special ski wax at $62.70, written by the script, and Wax applicator at $6.00">
 
-The bundle block in that screenshot is the markup below. The visitor's test group prices the wax at $62.70; a visitor outside the test keeps the $57.00 the theme rendered.
+In the screenshot, the visitor's test group prices the wax at $62.70; a visitor outside the test keeps the $57.00 the theme rendered.
 
 ## Markup
 
 Keep the theme's price inside the element. It stays for visitors who are not in a test. The product variant and product IDs below are the screenshot store's; use your own.
 
-One product variant, as in the bundle block above:
+One product variant:
 
 ```html
 <div class="bundle">

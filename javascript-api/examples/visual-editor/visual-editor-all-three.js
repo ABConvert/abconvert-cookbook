@@ -3,8 +3,7 @@
  * JavaScript instead of the theme: the free shipping bar, a bundle block with
  * test prices, and the offer banner.
  *
- * Verified on a Dawn storefront, 2026-09-11. Four things this script does that
- * a theme script does not need to:
+ * Four things this script does that a theme script does not need to:
  *
  *   1. Custom JavaScript is injected into <head> before the page has a <body>.
  *      Every element is created inside the first window.ABConvertQueue callback,

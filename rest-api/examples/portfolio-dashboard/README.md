@@ -11,15 +11,13 @@ For each store token:
 
 It writes `out/portfolio.html` and `out/portfolio.md`, sorted longest running first. Run it from your own scheduler: a nightly cron entry, a scheduled GitHub Action, or an n8n schedule trigger. ABConvert does not send a nightly digest, and webhooks are not available yet.
 
-A revoked token, a shop with API access turned off, or a single test that 404s becomes an error row, and the run continues. Both files show an **Errors** section when there is one.
-
-[`dashboard.mjs`](dashboard.mjs) explains the mechanics inline, next to the code: why one token reaches one shop, what the summary carries versus the snapshot, pacing against 60 reads per minute, and ranking on `difference` instead of `lift`.
+A revoked token, a shop with API access turned off, or a single test that 404s becomes an error row, and the run continues.
 
 ## Setup
 
 ```bash
 export ABCONVERT_API_TOKENS="northwind=abcv_live_aaa,acme=abcv_live_bbb"
-node public-api/examples/portfolio-dashboard/dashboard.mjs
+node rest-api/examples/portfolio-dashboard/dashboard.mjs
 open out/portfolio.html
 ```
 
@@ -33,7 +31,7 @@ open out/portfolio.html
 | `DASHBOARD_DETAIL` | no | `decided` | Which tests get a full snapshot read: `decided` (outcome `winner` or `loser`), `all`, or `none`. |
 | `REQUEST_SPACING_MS` | no | `1100` | Delay before each snapshot read, to stay inside 60 reads per minute. |
 
-The label is yours. It appears in the dashboard and in the logs, where the script prints only the last 4 characters of a token.
+The label appears in the dashboard and in the logs. The logs show only the last 4 characters of a token.
 
 ## Reading the output
 
