@@ -17,11 +17,6 @@
 
   // Each destination receives one Assignment. Send `testGroup.index` as the
   // stable ID; the name is a label you can rename while the test runs.
-  // PostHog and Mixpanel identify the control variant by the key 'control'.
-  function variantKey(assignment) {
-    return assignment.testGroup.control ? 'control' : String(assignment.testGroup.index);
-  }
-
   var DESTINATIONS = {
     // Google Tag Manager, or any tag that reads window.dataLayer. The event
     // name and `exp_variant_string` format match what other testing tools
@@ -38,23 +33,14 @@
       });
     },
 
-    // PostHog. The session super property puts the test group on every
-    // later event, so any insight can filter or break down by
-    // `$feature/abconvert-<test ID>`. The `$feature_flag_called` event is the
-    // exposure PostHog's Experiments product reads; it needs a PostHog
-    // experiment with flag key 'abconvert-<test ID>' and variant keys
-    // 'control', '1', '2', ...
+    // PostHog. A session super property puts the test group on every later
+    // event, so any insight or dashboard can filter or break down by
+    // `abconvert_test_<test ID>`.
     posthog: function (assignment) {
       if (!window.posthog) return;
       var property = {};
-      property['$feature/abconvert-' + assignment.experimentId] = variantKey(assignment);
+      property['abconvert_test_' + assignment.experimentId] = String(assignment.testGroup.index);
       window.posthog.register_for_session(property);
-      window.posthog.capture('$feature_flag_called', {
-        $feature_flag: 'abconvert-' + assignment.experimentId,
-        $feature_flag_response: variantKey(assignment),
-        experiment_name: assignment.experimentName,
-        variant_name: assignment.testGroup.name,
-      });
     },
 
     // Mixpanel. `$experiment_started` with these two properties is the
@@ -63,7 +49,7 @@
       if (!window.mixpanel) return;
       window.mixpanel.track('$experiment_started', {
         'Experiment name': assignment.experimentName,
-        'Variant name': variantKey(assignment),
+        'Variant name': String(assignment.testGroup.index),
         experiment_id: assignment.experimentId,
         variation_id: String(assignment.testGroup.index),
       });
