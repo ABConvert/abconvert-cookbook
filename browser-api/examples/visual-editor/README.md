@@ -10,7 +10,7 @@ Script: [`visual-editor-all-three.js`](visual-editor-all-three.js)
 
 1. Create a visual editor test. Put the script in the custom JavaScript of a test group other than Control. Control cannot carry custom code.
 2. Set the two product variant IDs at the top of the script to product variants a running price test covers, and the fallback prices to their catalog prices. The selectors and the rest of the markup are for the Dawn store in the screenshot, so change them to match your theme.
-3. Launch, or preview. To see it yourself, force every test on the page at once with `?abconvert_force=1` on the product URL, after entering the store password if the store has one. The [reference](https://docs.abconvert.io/api-reference/browser-api#force-a-test-group) explains both.
+3. Launch, or preview. To see it yourself, add `?abconvert_force=EXPERIMENT_ID:INDEX` to the product URL; see [See one test group with a link](https://docs.abconvert.io/experiments/lifecycle#see-one-test-group-with-a-link).
 
 The custom JavaScript field locks when the test launches. To change the script, end the test and create another.
 

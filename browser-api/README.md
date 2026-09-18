@@ -69,7 +69,7 @@ Two rules differ from a theme script:
 
 ## QA a test group
 
-Append `?abconvert_force=EXPERIMENT_ID:INDEX` to any storefront URL to see one test group, or `?abconvert_force=INDEX` to force that index in every test on the page at once. Or run `ABConvert.forceTestGroup('EXPERIMENT_ID', INDEX)` in the console and reload. Forced visits are excluded from results. On a password-protected store, enter the password first: the password page drops the query string. The [reference](https://docs.abconvert.io/api-reference/browser-api#force-a-test-group) has the details.
+Append `?abconvert_force=EXPERIMENT_ID:INDEX` to any storefront URL to see one test group, or run `ABConvert.forceTestGroup('EXPERIMENT_ID', INDEX)` in the console and reload. Forced visits are excluded from results. See [See one test group with a link](https://docs.abconvert.io/experiments/lifecycle#see-one-test-group-with-a-link) and [Force a test group](https://docs.abconvert.io/api-reference/browser-api#force-a-test-group).
 
 ## Ask an agent
 
