@@ -1,6 +1,6 @@
 # Free shipping progress bar
 
-"Spend $51.00 more for free shipping", using the threshold of the visitor's shipping test group.
+Use the JavaScript API to show "Spend $51.00 more for free shipping", using the threshold of the visitor's shipping test group.
 
 Script: [`free-shipping-bar.js`](free-shipping-bar.js)
 
@@ -38,7 +38,7 @@ On a test with more than one shipping zone, name the zone the bar is for. Shopif
 
 ## Watching the cart
 
-Shopify's Storefront Events API fires `shopify:cart:lines-update` only when something calls `Shopify.actions.updateCart`. A theme that posts to `/cart/add.js` itself never fires it, and Dawn is such a theme: on a Dawn store the event fired zero times across every check. So the script watches three signals and collapses them into one render:
+Shopify's Storefront Events API fires `shopify:cart:lines-update` only when something calls `Shopify.actions.updateCart`. A theme that posts to `/cart/add.js` itself, as Dawn does, never fires it. So the script watches three signals and collapses them into one render:
 
 1. `shopify:cart:lines-update`, waiting on `event.promise`, for themes that use the actions API.
 2. The cart write itself, by watching `fetch` and `XMLHttpRequest` calls to `/cart/add`, `/cart/change`, `/cart/update` and `/cart/clear`. This is the one signal every theme produces. The theme gets its own promise back untouched.
@@ -52,5 +52,5 @@ If you would rather not touch `fetch`, keep signals 1 and 3 and call `rerender` 
 - **Comparing a rate in one currency with a cart in another.** A rate is set in one currency and ABConvert does not convert it. The script checks `cart.currency` against `threshold.currency` and hides the bar on a mismatch.
 - **Reading the cart before the update finished.** `shopify:cart:lines-update` fires when the update starts. Wait on `event.promise`, as the script does.
 - **Looking for the theme's helpers at load time.** `window.subscribe` does not exist until Dawn's scripts have run. Subscribe inside the queue callback.
-- **Letting a failed cart read blank the bar.** `render` awaits a fetch. The script catches a rejection and leaves the last render in place.
+- **Letting a failed cart read blank the bar.** The script catches the rejected fetch, so a failed cart read leaves the markup as the theme rendered it, or as the last render left it.
 - **Rewriting the bar on every cart event.** Write only when the text changed. ABConvert watches the page, and rewriting an unchanged element can trigger it and your script in a loop.

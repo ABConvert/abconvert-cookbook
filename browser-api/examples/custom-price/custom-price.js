@@ -44,7 +44,7 @@
     document.querySelectorAll(SELECTOR).forEach(function (element) {
       var price = priceFor(ABConvert, element);
       // null: no test covers this product, the visitor is not in it, or the
-      // test sets no price for their country. Leave the theme's price alone.
+      // test sets no price for their market. Leave the theme's price alone.
       if (!price) return;
       var html = markup(ABConvert, element, price);
       // Write only when it changed. ABConvert watches the page, and a rewrite

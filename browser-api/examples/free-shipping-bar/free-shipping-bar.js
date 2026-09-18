@@ -38,7 +38,7 @@
       return;
     }
 
-    // Shopify returns the subtotal in cents, in the cart's presentment currency.
+    // Shopify returns the subtotal in cents, in the cart's currency.
     var cart = await fetch(window.Shopify.routes.root + 'cart.js').then(function (response) {
       return response.json();
     });

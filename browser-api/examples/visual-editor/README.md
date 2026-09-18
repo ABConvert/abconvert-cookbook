@@ -1,6 +1,6 @@
 # All three, from a visual editor test
 
-The free shipping bar, a bundle block with test prices, and the offer banner, run from the custom JavaScript of a [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) instead of the theme. The test runs the script only for visitors in its test group, and you end it from the ABConvert admin.
+Use the JavaScript API from the custom JavaScript of a [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) instead of the theme, to run the free shipping bar, a bundle block with test prices, and the offer banner. The test runs the script only for visitors in its test group, and you end it from the ABConvert admin.
 
 Script: [`visual-editor-all-three.js`](visual-editor-all-three.js)
 
@@ -9,7 +9,7 @@ Script: [`visual-editor-all-three.js`](visual-editor-all-three.js)
 ## Set it up
 
 1. Create a visual editor test. Put the script in the custom JavaScript of a test group other than Control. Control cannot carry custom code.
-2. Set the two product variant IDs at the top of the script to variants a running price test covers, and the fallback prices to their catalog prices.
+2. Set the two product variant IDs at the top of the script to product variants a running price test covers, and the fallback prices to their catalog prices. The selectors and the rest of the markup are for the Dawn store in the screenshot, so change them to match your theme.
 3. Launch, or preview. To see it yourself, force every test on the page at once with `?abconvert_force=1` on the product URL, after entering the store password if the store has one. The [reference](https://docs.abconvert.io/api-reference/browser-api#force-a-test-group) explains both.
 
 The custom JavaScript field locks when the test launches. To change the script, end the test and create another.
@@ -26,5 +26,4 @@ The example scripts in the other directories assume the theme provides the marku
 ## Common mistakes
 
 - **Checking for the theme's helpers at inject time.** Nothing the theme defines exists yet. Look for `window.subscribe` and friends inside the queue callback.
-- **Reading `document.head` before it exists.** It does exist at the visual editor's injection point, but not in every harness. The script falls back to inserting its stylesheet on `DOMContentLoaded`.
-- **Judging the bar in the wrong market.** A free shipping threshold is set in one currency. In a market priced in another, the bar says so instead of comparing the two.
+- **Judging the bar in the wrong market.** A free shipping threshold is set in one currency. In a market that sells in another currency, the bar says so instead of comparing the two.

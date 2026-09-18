@@ -1,6 +1,6 @@
 # Custom price element
 
-Show the visitor's test price in an element ABConvert does not rewrite.
+Use the JavaScript API to show the visitor's test price in an element ABConvert does not change.
 
 Script: [`custom-price.js`](custom-price.js)
 
@@ -12,7 +12,7 @@ The bundle block in that screenshot is the markup below. The visitor's test grou
 
 ## Markup
 
-Keep the theme's price inside the element. It stays for visitors who are not in a test.
+Keep the theme's price inside the element. It stays for visitors who are not in a test. The product variant and product IDs below are the screenshot store's; use your own.
 
 One product variant, as in the bundle block above:
 
@@ -45,7 +45,7 @@ A product's lowest price, for "From $X" cards:
 
 ## Common mistakes
 
-- **Rendering a price for a visitor who is not in the test.** `null` means no test covers the product variant, the visitor is not in it, or the test sets no price for their country. Leave the theme's price alone.
+- **Rendering a price for a visitor who is not in the test.** `null` means no test covers the product variant, the visitor is not in it, or the test sets no price for their market. Leave the theme's price alone.
 - **Passing the product ID as the variant ID.** `data-variant-id` takes the product variant ID. For a product-level price, use `data-product-id`.
-- **Formatting with the page's default currency.** Pass `price.currency` to `formatPrice`. A price for another country is in that country's currency.
+- **Formatting with the page's default currency.** Pass `price.currency` to `formatPrice`. A price for another market is in the currency that market sells in.
 - **Writing a value that is already correct.** The script compares `innerHTML` before writing. Without that check, ABConvert's own page watcher and this script trigger each other until the tab freezes.

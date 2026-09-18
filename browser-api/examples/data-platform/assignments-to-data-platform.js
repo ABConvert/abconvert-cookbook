@@ -16,7 +16,7 @@
   var DESTINATION = 'dataLayer';
 
   // Each destination receives one Assignment. Send `testGroup.index` as the
-  // stable ID; the name is a label the merchant can rename mid-test.
+  // stable ID; the name is a label you can rename while the test runs.
   var DESTINATIONS = {
     // Google Tag Manager, or any tag that reads window.dataLayer. The event
     // name and `exp_variant_string` format match what other testing tools
@@ -59,7 +59,7 @@
   };
 
   // Once per session per test group. Every page view would otherwise send
-  // the same assignment again and inflate the platform's exposure counts.
+  // the same assignment again and count the visitor more than once.
   // Delete this and the check below to send on every page view instead.
   function markSent(assignment) {
     var key = 'abconvert-sent:' + assignment.experimentId + ':' + assignment.testGroup.index;

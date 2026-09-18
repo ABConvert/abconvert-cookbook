@@ -7,7 +7,7 @@ ABConvert exposes two surfaces, and this repo has a section for each:
 | Surface | What it is | Use it for | Start at |
 |---|---|---|---|
 | [Public API](public-api/) | REST API at `api.abconvert.io/v1` | Creating tests, running their lifecycle, reading results, exporting orders, from your own backend or an agent | [`public-api/README.md`](public-api/README.md) |
-| [JavaScript API](browser-api/) | `window.ABConvert` on every storefront page | Reading the visitor's test group, price, shipping rates, and offer from theme JavaScript | [`browser-api/README.md`](browser-api/README.md) |
+| [JavaScript API](browser-api/) | `window.ABConvert` on every storefront page | Sending assignments to your analytics tools, and showing a test price, a free shipping bar, or an offer banner, from theme JavaScript | [`browser-api/README.md`](browser-api/README.md) |
 
 A headless SDK, for storefronts that do not run the Shopify theme, is planned. It will get its own top-level directory when it ships.
 
@@ -15,7 +15,7 @@ A headless SDK, for storefronts that do not run the Shopify theme, is planned. I
 
 **You write backend code or automation.** Go to [`public-api/`](public-api/). The examples read results into a dashboard, export orders, post a Slack report, and pause a test on a guardrail breach. They run on Node 20 with no dependencies.
 
-**You write theme code.** Go to [`browser-api/`](browser-api/). The examples send assignments to a data platform, render a free shipping bar, rewrite a price element ABConvert does not reach, and render an offer banner. They run in the browser, and a playground lets you try them without a store.
+**You write theme code.** Go to [`browser-api/`](browser-api/). Use the JavaScript API to send assignments to your analytics tools, show a test price, show a free shipping bar, and show an offer banner. The examples run in the browser, and a playground lets you try them without a store.
 
 **You drive ABConvert with an agent.** The [skill](skills/abconvert-public-api/) teaches Claude Code, Codex, or Cursor the REST API. [`public-api/README.md`](public-api/README.md#ask-an-agent) shows the setup and prompts.
 

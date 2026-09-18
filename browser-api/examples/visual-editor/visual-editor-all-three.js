@@ -4,7 +4,7 @@
  * test prices, and the offer banner.
  *
  * Verified on a Dawn storefront, 2026-09-11. Four things this script does that
- * a theme script does not need to, each learned the hard way:
+ * a theme script does not need to:
  *
  *   1. Custom JavaScript is injected into <head> before the page has a <body>.
  *      Every element is created inside the first window.ABConvertQueue callback,
@@ -18,8 +18,8 @@
  *   4. Cart changes are watched three ways, because themes differ in what they
  *      emit. See free-shipping-bar.js for the reasoning.
  *
- * Set the two product variant IDs below to variants covered by a running price
- * test. The fallback prices in the markup are what visitors outside the test see.
+ * Set the two product variant IDs below to product variants covered by a running
+ * price test. The fallback prices in the markup are what visitors outside the test see.
  */
 (function () {
   var css = document.createElement('style');
@@ -40,8 +40,8 @@
     '.offer-banner__cta{flex:none;background:#fff;color:#141414;font-weight:600;font-size:13px;padding:8px 14px;border-radius:8px;text-decoration:none;cursor:pointer;display:inline-block}',
     '.offer-banner__cta:hover{background:#e8e8e8}',
   ].join('');
-  // <head> exists when the Visual Editor injects this script, but not in every
-  // harness, so fall back to inserting the stylesheet once the document opens.
+  // <head> may not exist yet when this runs, so fall back to inserting the
+  // stylesheet once the document has parsed.
   function addStyles() {
     var target = document.head || document.documentElement;
     if (!target) return false;
@@ -176,7 +176,8 @@
   }
 
   function render(ABConvert) {
-    renderShippingBar(ABConvert).catch(function () { /* leave the bar hidden */ });
+    // A failed cart read leaves the markup as the theme rendered it.
+    renderShippingBar(ABConvert).catch(function () {});
     renderOfferBanner(ABConvert);
   }
   var pending = null;

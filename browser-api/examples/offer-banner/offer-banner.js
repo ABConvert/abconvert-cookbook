@@ -10,8 +10,7 @@
  *   </div>
  *
  * What it does:
- *   1. Reads the visitor's offers. An empty list hides the banner, which is
- *      also what Control with no offer sees.
+ *   1. Reads the visitor's offers. An empty list hides the banner.
  *   2. Shows the first offer's title.
  *   3. For a volume discount, compares the cart's item count with the tiers
  *      and says how many more items unlock the next one. ABConvert does not

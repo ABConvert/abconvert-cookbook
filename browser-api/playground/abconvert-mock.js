@@ -32,7 +32,7 @@
         { index: 0, name: 'Control', control: true, split: 50 },
         { index: 1, name: 'Variant A - $49', control: false, split: 50 },
       ],
-      // productId -> variantId -> group index -> price. Prices are set for the
+      // productId -> variantId -> test group index -> price. Prices are set for the
       // US market only, so `getPriceByVariantId(id, { country: 'GB' })` is null.
       products: {
         6654464491584: {
@@ -50,7 +50,7 @@
         { index: 0, name: 'Control', control: true, split: 50 },
         { index: 1, name: 'Free over $75', control: false, split: 50 },
       ],
-      // group index -> zone -> rates, cheapest first, as the API returns them.
+      // test group index -> zone -> rates, cheapest first, as the API returns them.
       rates: {
         0: {
           'United States': [
@@ -80,7 +80,7 @@
         { index: 0, name: 'Control', control: true, split: 50 },
         { index: 1, name: 'Buy 2 save 10%', control: false, split: 50 },
       ],
-      // group index -> offer. Control has none.
+      // test group index -> offer. Test group 0 has none.
       offers: {
         1: {
           title: 'Buy 2 save 10%',
@@ -156,8 +156,8 @@
     var assignment = assignmentFor(experimentId);
     if (!assignment) return null;
     var country = options && options.country ? String(options.country).toUpperCase() : test.country;
-    // The test sets prices for one country. Any other country is a price the
-    // store sets itself, which ABConvert does not know, so it reports nothing.
+    // The test sets prices for one market. In any other market the visitor sees
+    // the store's own price, so the method returns null.
     if (country !== test.country) return null;
     var entry = test.products[productId][variantId][assignment.testGroup.index];
     return {

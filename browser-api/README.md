@@ -1,8 +1,8 @@
 # JavaScript API examples
 
-Theme JavaScript that reads `window.ABConvert`, the object ABConvert publishes on every storefront page. Each example is one directory, one README, and one script you can add to a theme as it is.
+Use the JavaScript API to send assignments to your analytics tools, and to show a test price, a free shipping bar, or an offer banner on your storefront. Each example is one directory, one README, and one script you add to a theme.
 
-`window.ABConvert` tells your code which test groups the visitor is in, and the price, shipping rates, and offer that visitor gets. It is read-only: to create or manage tests, use the [public API](../public-api/). The contract lives in the [JavaScript API reference](https://docs.abconvert.io/api-reference/browser-api), and the same examples are walked through on [JavaScript API examples](https://docs.abconvert.io/api-reference/browser-api-examples). The versions here are the full ones.
+`window.ABConvert` is the object ABConvert puts on every storefront page. It tells your code which test group the visitor is in, and the test price, shipping rates, and offer that test group gets. It is read-only. The contract lives in the [JavaScript API reference](https://docs.abconvert.io/api-reference/browser-api), and the same examples are walked through on [JavaScript API examples](https://docs.abconvert.io/api-reference/browser-api-examples). The versions here are the full ones. The selectors, IDs, and markup are for the store in the screenshots, so change them to match your theme.
 
 <img src="storefront-overview.png" width="390" alt="A mobile product page with three elements outlined in green and numbered: 1 a free shipping bar with a progress track pinned above the header, 2 a bundle card under the product price, 3 an offer card fixed to the bottom">
 
@@ -22,7 +22,7 @@ Every example follows the same three habits, which avoid the reference's [common
 
 ## Try them without a store
 
-The [playground](playground/) runs all four examples against a fake `window.ABConvert` and a fake cart, so you can read the code and see it react. Serve the directory over HTTP and open the page:
+The [playground](playground/) runs the four theme examples against a fake `window.ABConvert` and a fake cart, so you can read the code and see it react. Serve the directory over HTTP and open the page:
 
 ```bash
 cd browser-api
@@ -36,20 +36,20 @@ The mock is for development only. On a store, the ABConvert app embed publishes 
 
 ## Add an example to a theme
 
-1. Copy the script into your theme's `assets/` folder.
+1. Add the script to your theme's `assets/` folder.
 2. Load it from `layout/theme.liquid`, anywhere in `<head>` or before `</body>`:
 
    ```liquid
    <script src="{{ 'free-shipping-bar.js' | asset_url }}" defer></script>
    ```
 
-3. Add the markup the example's README shows, where you want it rendered.
+3. Add the markup the example's README shows, where you want it rendered, with the selectors and IDs changed to match your theme.
 
 Order does not matter. Each script pushes its work onto `window.ABConvertQueue`, which runs it once ABConvert is ready, whether the script loaded before or after the app embed.
 
 ## Or run one from a visual editor test
 
-You do not have to touch the theme. A [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) carries custom JavaScript per test group, so the script runs only for visitors in that test group and you end it from the ABConvert admin. The [`visual-editor`](examples/visual-editor/) example is all three components run this way, verified on a live storefront.
+You do not have to touch the theme. A [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) carries custom JavaScript per test group, so the script runs only for visitors in that test group and you end it from the ABConvert admin. The [`visual-editor`](examples/visual-editor/) example runs all three components this way.
 
 Two rules differ from a theme script:
 
