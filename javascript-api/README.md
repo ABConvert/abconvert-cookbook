@@ -25,7 +25,7 @@ Every example follows the same three habits, which avoid the reference's [common
 The [playground](playground/) runs the four theme examples against a fake `window.ABConvert` and a fake cart, so you can read the code and see it react. Serve the directory over HTTP and open the page:
 
 ```bash
-cd browser-api
+cd javascript-api
 python3 -m http.server 4190
 # then open http://localhost:4190/playground/
 ```
