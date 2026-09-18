@@ -14,7 +14,7 @@
  *   that test group for this tab, the way it does on a real storefront, and
  *   `forceTestGroup` / `clearForcedTestGroup` do the same from the console.
  *
- * The fixtures below are the objects the Browser API reference shows:
+ * The fixtures below are the objects the JavaScript API reference shows:
  * https://docs.abconvert.io/api-reference/browser-api
  *
  * Do not ship this file to a store. The app embed publishes the real object.

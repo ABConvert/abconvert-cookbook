@@ -1,8 +1,8 @@
-# Browser API examples
+# JavaScript API examples
 
 Theme JavaScript that reads `window.ABConvert`, the object ABConvert publishes on every storefront page. Each example is one directory, one README, and one script you can add to a theme as it is.
 
-`window.ABConvert` tells your code which test groups the visitor is in, and the price, shipping rates, and offer that visitor gets. It is read-only: to create or manage tests, use the [public API](../public-api/). The contract lives in the [Browser API reference](https://docs.abconvert.io/api-reference/browser-api), and the same examples are walked through on [Browser API examples](https://docs.abconvert.io/api-reference/browser-api-examples). The versions here are the full ones.
+`window.ABConvert` tells your code which test groups the visitor is in, and the price, shipping rates, and offer that visitor gets. It is read-only: to create or manage tests, use the [public API](../public-api/). The contract lives in the [JavaScript API reference](https://docs.abconvert.io/api-reference/browser-api), and the same examples are walked through on [JavaScript API examples](https://docs.abconvert.io/api-reference/browser-api-examples). The versions here are the full ones.
 
 <img src="storefront-overview.png" width="390" alt="A mobile product page with three elements outlined in green and numbered: 1 a free shipping bar with a progress track pinned above the header, 2 a bundle card under the product price, 3 an offer card fixed to the bottom">
 

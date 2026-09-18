@@ -7,7 +7,7 @@ ABConvert exposes two surfaces, and this repo has a section for each:
 | Surface | What it is | Use it for | Start at |
 |---|---|---|---|
 | [Public API](public-api/) | REST API at `api.abconvert.io/v1` | Creating tests, running their lifecycle, reading results, exporting orders, from your own backend or an agent | [`public-api/README.md`](public-api/README.md) |
-| [Browser API](browser-api/) | `window.ABConvert` on every storefront page | Reading the visitor's test group, price, shipping rates, and offer from theme JavaScript | [`browser-api/README.md`](browser-api/README.md) |
+| [JavaScript API](browser-api/) | `window.ABConvert` on every storefront page | Reading the visitor's test group, price, shipping rates, and offer from theme JavaScript | [`browser-api/README.md`](browser-api/README.md) |
 
 A headless SDK, for storefronts that do not run the Shopify theme, is planned. It will get its own top-level directory when it ships.
 
@@ -32,7 +32,7 @@ Each surface directory is self-contained: its README, its examples, and anything
 ## Reference
 
 - [Public API reference](https://docs.abconvert.io/api-reference/overview)
-- [Browser API reference](https://docs.abconvert.io/api-reference/browser-api)
+- [JavaScript API reference](https://docs.abconvert.io/api-reference/browser-api)
 - [ABConvert docs](https://docs.abconvert.io)
 
 ## License
