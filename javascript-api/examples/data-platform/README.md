@@ -24,8 +24,10 @@ Set `DESTINATION` at the top of the script to one of the keys in `DESTINATIONS`:
 | Destination | Sends |
 |---|---|
 | `dataLayer` | `experience_impression` with `exp_variant_string`, `experiment_id`, `experiment_name`, `variant_id`, `variant_name` |
-| `posthog` | `$feature_flag_called` with `$feature_flag` and `$feature_flag_response` |
+| `posthog` | No event. A session super property `abconvert_test_<test ID>` with the test group index, on every later event in the session |
 | `mixpanel` | `$experiment_started` with `Experiment name` and `Variant name` |
+
+In PostHog, filter or break down any insight by `abconvert_test_<test ID>`. Mixpanel's [Experiments report](https://docs.mixpanel.com/docs/experiments) reads `$experiment_started` as an exposure, the moment the visitor sees the tested page; ABConvert reports the assignment, which can come earlier.
 
 To add a platform, add a function to `DESTINATIONS` that takes one `Assignment` and calls the platform's SDK. Send `testGroup.index` as the stable ID. `testGroup.name` is a label you can rename while the test runs.
 

@@ -33,25 +33,23 @@
       });
     },
 
-    // PostHog. `$feature_flag_called` with these two properties is what
-    // PostHog's own experiment reports read.
+    // PostHog. A session super property puts the test group on every later
+    // event, so any insight or dashboard can filter or break down by
+    // `abconvert_test_<test ID>`.
     posthog: function (assignment) {
       if (!window.posthog) return;
-      window.posthog.capture('$feature_flag_called', {
-        $feature_flag: 'abconvert-' + assignment.experimentId,
-        $feature_flag_response: String(assignment.testGroup.index),
-        experiment_name: assignment.experimentName,
-        variant_name: assignment.testGroup.name,
-      });
+      var property = {};
+      property['abconvert_test_' + assignment.experimentId] = String(assignment.testGroup.index);
+      window.posthog.register_for_session(property);
     },
 
-    // Mixpanel. `$experiment_started` with these two properties is what
-    // Mixpanel's experiment reports read.
+    // Mixpanel. `$experiment_started` with these two properties is the
+    // exposure event Mixpanel's Experiments report reads.
     mixpanel: function (assignment) {
       if (!window.mixpanel) return;
       window.mixpanel.track('$experiment_started', {
         'Experiment name': assignment.experimentName,
-        'Variant name': assignment.testGroup.name,
+        'Variant name': String(assignment.testGroup.index),
         experiment_id: assignment.experimentId,
         variation_id: String(assignment.testGroup.index),
       });
