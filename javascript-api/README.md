@@ -1,12 +1,12 @@
 # JavaScript API examples
 
-Use the JavaScript API to send assignments to your analytics tools, and to show a test price, a free shipping bar, or an offer banner on your storefront. Each example is one directory, one README, and one script you add to a theme.
+Use the JavaScript API to send assignments to your analytics tools, and to show a test price, a free shipping bar, or an offer banner on your storefront.
 
-`window.ABConvert` is the object ABConvert puts on every storefront page. It tells your code which test group the visitor is in, and the test price, shipping rates, and offer that test group gets. It is read-only. The contract lives in the [JavaScript API reference](https://docs.abconvert.io/api-reference/browser-api), and the same examples are walked through on [JavaScript API examples](https://docs.abconvert.io/api-reference/browser-api-examples). The versions here are the full ones. The selectors, IDs, and markup are for the store in the screenshots, so change them to match your theme.
+`window.ABConvert` is the object ABConvert puts on every storefront page. It tells your code which test group the visitor is in, and the test price, shipping rates, and offer that test group gets. It is read-only; see the [JavaScript API reference](https://docs.abconvert.io/api-reference/browser-api). The docs walk through shorter versions of these scripts on [JavaScript API examples](https://docs.abconvert.io/api-reference/browser-api-examples). The selectors, IDs, and markup are for the store in the screenshots, so change them to match your theme.
 
 <img src="storefront-overview.png" width="390" alt="A mobile product page with three elements outlined in green and numbered: 1 a free shipping bar with a progress track pinned above the header, 2 a bundle card under the product price, 3 an offer card fixed to the bottom">
 
-Outlined and numbered: **1** the free shipping bar, **2** the bundle card, **3** the offer card. The dimmed parts are the theme's own.
+Outlined and numbered: **1** the free shipping bar, **2** the bundle card, **3** the offer card.
 
 ## Start here
 
@@ -18,11 +18,11 @@ Outlined and numbered: **1** the free shipping bar, **2** the bundle card, **3**
 | 4 | [`offer-banner`](examples/offer-banner/) | Render the visitor's offer and how many more items unlock the next volume tier. |
 | 5 | [`visual-editor`](examples/visual-editor/) | Run the bar, a bundle block, and the banner from a visual editor test's custom JavaScript, with no theme edit. |
 
-Every example follows the same three habits, which avoid the reference's [common mistakes](https://docs.abconvert.io/api-reference/browser-api#common-mistakes): wait on `window.ABConvertQueue` rather than polling, treat `null` as "leave the theme alone", and compare before you write.
+Every example follows three habits: wait on `window.ABConvertQueue` rather than polling, treat `null` as "leave the theme alone", and compare before you write.
 
 ## Try them without a store
 
-The [playground](playground/) runs the four theme examples against a fake `window.ABConvert` and a fake cart, so you can read the code and see it react. Serve the directory over HTTP and open the page:
+The [playground](playground/) runs the four theme examples against a fake `window.ABConvert` and a fake cart:
 
 ```bash
 cd javascript-api
@@ -30,9 +30,9 @@ python3 -m http.server 4190
 # then open http://localhost:4190/playground/
 ```
 
-The page's links use `?abconvert_force=EXPERIMENT_ID:INDEX` to switch between Control and Variant A, the same parameter that works on a real storefront. Edit the fixtures at the top of [`playground/abconvert-mock.js`](playground/abconvert-mock.js) to try other prices, rates, and offers.
+Edit the fixtures at the top of [`playground/abconvert-mock.js`](playground/abconvert-mock.js) to try other prices, rates, and offers.
 
-The mock is for development only. On a store, the ABConvert app embed publishes the real object; you add only the example script.
+Do not add the mock to a store.
 
 ## Add an example to a theme
 
@@ -45,7 +45,7 @@ The mock is for development only. On a store, the ABConvert app embed publishes 
 
 3. Add the markup the example's README shows, where you want it rendered, with the selectors and IDs changed to match your theme.
 
-Order does not matter. Each script pushes its work onto `window.ABConvertQueue`, which runs it once ABConvert is ready, whether the script loaded before or after the app embed.
+Load order does not matter: each script waits on `window.ABConvertQueue`.
 
 ## Or run one from a visual editor test
 
@@ -73,7 +73,7 @@ Append `?abconvert_force=EXPERIMENT_ID:INDEX` to any storefront URL to see one t
 
 ## Ask an agent
 
-The reference page is available as plain Markdown at `https://docs.abconvert.io/api-reference/browser-api.md`, so an agent with your theme open can read the contract directly:
+The reference page is available as plain Markdown at `https://docs.abconvert.io/api-reference/browser-api.md`:
 
 > "Read https://docs.abconvert.io/api-reference/browser-api.md. Then add a free shipping progress bar to the cart drawer in this theme that uses the visitor's ABConvert shipping test group."
 

@@ -16,7 +16,7 @@ The custom JavaScript field locks when the test launches. To change the script, 
 
 ## What differs from a theme script
 
-The example scripts in the other directories assume the theme provides the markup and loads them like any theme script. Injected from a visual editor test, four things change:
+Injected from a visual editor test instead of loaded by the theme, four things change:
 
 1. **The page has no `<body>` yet.** Custom JavaScript is injected into `<head>`. Every element is created inside the first `window.ABConvertQueue` callback, which runs once the document has parsed. Callbacks run in push order, so the builder is pushed before the callbacks that render into it.
 2. **The bundle anchors on the product's own price container.** With an item in the cart, Dawn renders the cart drawer's line-item price earlier in the DOM than the product's, inside a drawer that is hidden until opened. Anchoring on the first `.price` on the page puts the block in there, where it exists and is never seen.
