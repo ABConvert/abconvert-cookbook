@@ -38,12 +38,17 @@
       });
     },
 
-    // PostHog. `$feature_flag_called` with these two properties is the
-    // exposure event PostHog's experiment reports read. The PostHog
-    // experiment's flag key must be 'abconvert-<test ID>' and its variant
-    // keys 'control', '1', '2', ...
+    // PostHog. The session super property puts the test group on every
+    // later event, so any insight can filter or break down by
+    // `$feature/abconvert-<test ID>`. The `$feature_flag_called` event is the
+    // exposure PostHog's Experiments product reads; it needs a PostHog
+    // experiment with flag key 'abconvert-<test ID>' and variant keys
+    // 'control', '1', '2', ...
     posthog: function (assignment) {
       if (!window.posthog) return;
+      var property = {};
+      property['$feature/abconvert-' + assignment.experimentId] = variantKey(assignment);
+      window.posthog.register_for_session(property);
       window.posthog.capture('$feature_flag_called', {
         $feature_flag: 'abconvert-' + assignment.experimentId,
         $feature_flag_response: variantKey(assignment),

@@ -24,10 +24,10 @@ Set `DESTINATION` at the top of the script to one of the keys in `DESTINATIONS`:
 | Destination | Sends |
 |---|---|
 | `dataLayer` | `experience_impression` with `exp_variant_string`, `experiment_id`, `experiment_name`, `variant_id`, `variant_name` |
-| `posthog` | `$feature_flag_called` with `$feature_flag` set to `abconvert-<test ID>` and `$feature_flag_response` set to `control` or the test group index |
+| `posthog` | A session super property `$feature/abconvert-<test ID>` on every later event, and `$feature_flag_called` with `$feature_flag` set to `abconvert-<test ID>` and `$feature_flag_response` set to `control` or the test group index |
 | `mixpanel` | `$experiment_started` with `Experiment name` and `Variant name` set to `control` or the test group index |
 
-For PostHog, create an [experiment](https://posthog.com/docs/experiments/running-experiments-without-feature-flags) with the flag key `abconvert-<test ID>` and the variant keys `control`, `1`, `2`, and so on, one per test group. Mixpanel needs no setup; its [Experiments report](https://docs.mixpanel.com/docs/experiments) reads the event as is.
+In PostHog, the super property lets any insight or dashboard filter or break down by `$feature/abconvert-<test ID>` with no setup. To use PostHog's Experiments product for the statistics as well, create an [experiment](https://posthog.com/docs/experiments/running-experiments-without-feature-flags) with the flag key `abconvert-<test ID>` and the variant keys `control`, `1`, `2`, and so on, one per test group. Mixpanel needs no setup; its [Experiments report](https://docs.mixpanel.com/docs/experiments) reads the event as is.
 
 Both platforms treat this event as an exposure: the moment the visitor sees the tested page. ABConvert reports the assignment, which can come earlier, so a visitor can count as exposed before reaching the tested page.
 
