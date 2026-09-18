@@ -17,6 +17,11 @@
 
   // Each destination receives one Assignment. Send `testGroup.index` as the
   // stable ID; the name is a label you can rename while the test runs.
+  // PostHog and Mixpanel identify the control variant by the key 'control'.
+  function variantKey(assignment) {
+    return assignment.testGroup.control ? 'control' : String(assignment.testGroup.index);
+  }
+
   var DESTINATIONS = {
     // Google Tag Manager, or any tag that reads window.dataLayer. The event
     // name and `exp_variant_string` format match what other testing tools
@@ -33,25 +38,27 @@
       });
     },
 
-    // PostHog. `$feature_flag_called` with these two properties is what
-    // PostHog's own experiment reports read.
+    // PostHog. `$feature_flag_called` with these two properties is the
+    // exposure event PostHog's experiment reports read. The PostHog
+    // experiment's flag key must be 'abconvert-<test ID>' and its variant
+    // keys 'control', '1', '2', ...
     posthog: function (assignment) {
       if (!window.posthog) return;
       window.posthog.capture('$feature_flag_called', {
         $feature_flag: 'abconvert-' + assignment.experimentId,
-        $feature_flag_response: String(assignment.testGroup.index),
+        $feature_flag_response: variantKey(assignment),
         experiment_name: assignment.experimentName,
         variant_name: assignment.testGroup.name,
       });
     },
 
-    // Mixpanel. `$experiment_started` with these two properties is what
-    // Mixpanel's experiment reports read.
+    // Mixpanel. `$experiment_started` with these two properties is the
+    // exposure event Mixpanel's Experiments report reads.
     mixpanel: function (assignment) {
       if (!window.mixpanel) return;
       window.mixpanel.track('$experiment_started', {
         'Experiment name': assignment.experimentName,
-        'Variant name': assignment.testGroup.name,
+        'Variant name': variantKey(assignment),
         experiment_id: assignment.experimentId,
         variation_id: String(assignment.testGroup.index),
       });
