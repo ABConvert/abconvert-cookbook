@@ -28,7 +28,7 @@ Run it from your own scheduler, every few hours. Polling faster returns the same
 export ABCONVERT_API_TOKEN="abcv_live_..."     # read scope is enough for DRY_RUN
 export GUARDRAIL_METRIC="conversion_rate"
 export GUARDRAIL_MAX_DROP="0.10"
-DRY_RUN=1 node examples/guardrail-monitor/monitor.mjs
+DRY_RUN=1 node public-api/examples/guardrail-monitor/monitor.mjs
 ```
 
 | Variable | Required | Default | Purpose |

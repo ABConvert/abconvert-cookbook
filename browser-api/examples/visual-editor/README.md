@@ -1,0 +1,29 @@
+# All three, from a visual editor test
+
+Use the JavaScript API from the custom JavaScript of a [visual editor test](https://docs.abconvert.io/experiments/visual-editor-test#the-right-side-panel) instead of the theme, to run the free shipping bar, a bundle block with test prices, and the offer banner. The test runs the script only for visitors in its test group, and you end it from the ABConvert admin.
+
+Script: [`visual-editor-all-three.js`](visual-editor-all-three.js)
+
+<img src="screenshot.png" width="640" alt="A desktop product page with a free shipping bar above the header, an Add the wax kit block under the price listing two ski waxes at test prices, and a dark offer banner reading Your offer, 30% off, with a Shop now button">
+
+## Set it up
+
+1. Create a visual editor test. Put the script in the custom JavaScript of a test group other than Control. Control cannot carry custom code.
+2. Set the two product variant IDs at the top of the script to product variants a running price test covers, and the fallback prices to their catalog prices. The selectors and the rest of the markup are for the Dawn store in the screenshot, so change them to match your theme.
+3. Launch, or preview. To see it yourself, add `?abconvert_force=EXPERIMENT_ID:INDEX` to the product URL; see [See one test group with a link](https://docs.abconvert.io/experiments/lifecycle#see-one-test-group-with-a-link).
+
+The custom JavaScript field locks when the test launches. To change the script, end the test and create another.
+
+## What differs from a theme script
+
+The example scripts in the other directories assume the theme provides the markup and loads them like any theme script. Injected from a visual editor test, four things change:
+
+1. **The page has no `<body>` yet.** Custom JavaScript is injected into `<head>`. Every element is created inside the first `window.ABConvertQueue` callback, which runs once the document has parsed. Callbacks run in push order, so the builder is pushed before the callbacks that render into it.
+2. **The bundle anchors on the product's own price container.** With an item in the cart, Dawn renders the cart drawer's line-item price earlier in the DOM than the product's, inside a drawer that is hidden until opened. Anchoring on the first `.price` on the page puts the block in there, where it exists and is never seen.
+3. **The bundle is built on product pages only.** On a collection page the first price belongs to a card.
+4. **The offer banner sits above the staff bar** Shopify shows on a password-protected store, so the button is clickable while you preview.
+
+## Common mistakes
+
+- **Checking for the theme's helpers at inject time.** Nothing the theme defines exists yet. Look for `window.subscribe` and friends inside the queue callback.
+- **Judging the bar in the wrong market.** A free shipping threshold is set in one currency. In a market that sells in another currency, the bar says so instead of comparing the two.
