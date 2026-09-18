@@ -73,8 +73,8 @@ Append `?abconvert_force=EXPERIMENT_ID:INDEX` to any storefront URL to see one t
 
 ## Ask an agent
 
-The reference page is available as plain Markdown at `https://docs.abconvert.io/api-reference/browser-api.md`:
+Both pages are available as plain Markdown, the guide at `https://docs.abconvert.io/api-reference/browser-api.md` and the reference at `https://docs.abconvert.io/api-reference/browser-api-reference.md`:
 
-> "Read https://docs.abconvert.io/api-reference/browser-api.md. Then add a free shipping progress bar to the cart drawer in this theme that uses the visitor's ABConvert shipping test group."
+> "Read https://docs.abconvert.io/api-reference/browser-api.md and https://docs.abconvert.io/api-reference/browser-api-reference.md. Then add a free shipping progress bar to the cart drawer in this theme that uses the visitor's ABConvert shipping test group."
 
-> "Read https://docs.abconvert.io/api-reference/browser-api.md. Our quick-view modal renders its own price. Make it show the visitor's ABConvert test price, and leave it alone for visitors who are not in a test."
+> "Read https://docs.abconvert.io/api-reference/browser-api.md and https://docs.abconvert.io/api-reference/browser-api-reference.md. Our quick-view modal renders its own price. Make it show the visitor's ABConvert test price, and leave it alone for visitors who are not in a test."
