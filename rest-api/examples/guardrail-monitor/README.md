@@ -12,11 +12,7 @@ Poll results on a schedule and pause a test when a guardrail metric falls too fa
    - Both test groups have at least `GUARDRAIL_MIN_SAMPLE` visitors.
    - The difference is significant at `GUARDRAIL_MAX_P_VALUE`.
 
-   The last two gates stop false alarms. A metric measured on 40 visitors swings by 30% on noise, so without them the monitor pauses healthy tests on their first morning.
-
 Run it from your own scheduler, every few hours. Polling faster returns the same numbers: the endpoint reads a stored snapshot, which recomputes about every 6 hours ([results reference](https://docs.abconvert.io/api-reference/results/retrieve-the-results-snapshot)). ABConvert does not send alerts, and webhooks are not available yet.
-
-[`monitor.mjs`](monitor.mjs) handles the edge cases and explains each one inline: a null `lift`, a sample ratio mismatch, finding which row is Control, and why the action is `pause` and never `end`. Read it before you tune anything.
 
 `pause` runs no entitlement check, so the monitor keeps working when a subscription lapses or a usage cap is reached. See [Feature availability](https://docs.abconvert.io/api-reference/overview#feature-availability).
 

@@ -41,7 +41,7 @@ On a test with more than one shipping zone, name the zone the bar is for. Shopif
 Shopify's Storefront Events API fires `shopify:cart:lines-update` only when something calls `Shopify.actions.updateCart`. A theme that posts to `/cart/add.js` itself, as Dawn does, never fires it. So the script watches three signals and collapses them into one render:
 
 1. `shopify:cart:lines-update`, waiting on `event.promise`, for themes that use the actions API.
-2. The cart write itself, by watching `fetch` and `XMLHttpRequest` calls to `/cart/add`, `/cart/change`, `/cart/update` and `/cart/clear`. This is the one signal every theme produces. The theme gets its own promise back untouched.
+2. The cart write itself, by watching `fetch` and `XMLHttpRequest` calls to `/cart/add`, `/cart/change`, `/cart/update` and `/cart/clear`. This is the one signal every theme produces.
 3. The theme's own pubsub, subscribed inside the `window.ABConvertQueue` callback. Dawn publishes `cart-update` through its `subscribe` helper, but defines it only once its own scripts have run, so checking for it at load time finds nothing.
 
 If you would rather not touch `fetch`, keep signals 1 and 3 and call `rerender` from your theme's own cart code.

@@ -1,8 +1,6 @@
 # REST API examples
 
-Runnable recipes for the ABConvert REST API. Each example is one directory, one README, and one Node.js script.
-
-The API lets you create tests, move them through their lifecycle, read results, and export order-level data from your own code. The contract lives in the [API reference](https://docs.abconvert.io/api-reference/overview). The examples here show how to use it.
+Use the REST API to create tests, run their lifecycle, read results, and export orders from your own code. See the [REST API reference](https://docs.abconvert.io/api-reference/overview).
 
 ## Start here
 
@@ -42,7 +40,7 @@ Every script reads `ABCONVERT_API_TOKEN`. Each example's README lists the other 
 
 ## Ask an agent
 
-You can also drive the API with an agent instead of a script. The hosted [MCP server](https://docs.abconvert.io/mcp/overview) is the fastest way to connect one. The [skill](../skills/abconvert-rest-api/) teaches an agent the REST API itself, the same endpoints these examples use.
+You can also drive the API with an agent. The hosted [MCP server](https://docs.abconvert.io/mcp/overview) is the fastest way to connect one. The [skill](../skills/abconvert-rest-api/) teaches an agent the REST API.
 
 ### Claude Code
 
