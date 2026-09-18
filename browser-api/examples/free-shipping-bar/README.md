@@ -52,5 +52,5 @@ If you would rather not touch `fetch`, keep signals 1 and 3 and call `rerender` 
 - **Comparing a rate in one currency with a cart in another.** A rate is set in one currency and ABConvert does not convert it. The script checks `cart.currency` against `threshold.currency` and hides the bar on a mismatch.
 - **Reading the cart before the update finished.** `shopify:cart:lines-update` fires when the update starts. Wait on `event.promise`, as the script does.
 - **Looking for the theme's helpers at load time.** `window.subscribe` does not exist until Dawn's scripts have run. Subscribe inside the queue callback.
-- **Pushing an async callback without a catch.** The queue catches a thrown error, not a rejected promise. `render` awaits a fetch, so the script ends it with `.catch()`.
+- **Letting a failed cart read blank the bar.** `render` awaits a fetch. The script catches a rejection and leaves the last render in place.
 - **Rewriting the bar on every cart event.** Write only when the text changed. ABConvert watches the page, and rewriting an unchanged element can trigger it and your script in a loop.

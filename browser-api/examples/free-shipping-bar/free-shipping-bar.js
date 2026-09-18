@@ -109,8 +109,7 @@
     if (typeof window.subscribe === 'function') {
       try { window.subscribe('cart-update', rerender); } catch (e) { /* theme-specific */ }
     }
-    // `render` is async. The queue catches a thrown error, not a rejected
-    // promise, so an async callback catches its own.
-    render(ABConvert).catch(function () { /* leave the markup as the theme rendered it */ });
+    // A failed cart read leaves the markup as the theme rendered it.
+    render(ABConvert).catch(function () {});
   });
 })();
